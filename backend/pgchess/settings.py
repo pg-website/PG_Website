@@ -76,6 +76,11 @@ WSGI_APPLICATION = 'pgchess.wsgi.application'
 APPEND_SLASH = False  # the contract's paths have no trailing slash
 
 # ---- Database ----
+# DB_SSLMODE: 'require' for Supabase/hosted Postgres; 'prefer' (default) for local dev.
+# Supabase direct connections (port 5432) require SSL; set DB_SSLMODE=require in production.
+_db_sslmode = os.environ.get('DB_SSLMODE', '').strip()
+_db_options: dict = {'sslmode': _db_sslmode} if _db_sslmode else {}
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -85,6 +90,7 @@ DATABASES = {
         'HOST': os.environ.get('DB_HOST', 'localhost'),
         'PORT': os.environ.get('DB_PORT', '5432'),
         'CONN_MAX_AGE': env_int('DB_CONN_MAX_AGE', 0),
+        'OPTIONS': _db_options,
     }
 }
 
