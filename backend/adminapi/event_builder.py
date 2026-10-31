@@ -268,8 +268,15 @@ def capabilities(event: Event, *, confirming=None, ready=None) -> dict:
                 else _denied(f'A {status.replace("_", " ")} event can no longer be edited.'))
     can_open_registration = (_allowed() if status == 'published'
                              else _denied('Only a published event can open registrations.'))
+    can_close_registration = (
+        _allowed() if status == 'registration_open'
+        else _denied('Only an open-registration event can have registrations closed.')
+    )
+    can_delete = (_allowed() if status == 'draft'
+                  else _denied('Only a draft event can be deleted.'))
     return {'canPublish': can_publish, 'canUnpublish': can_unpublish, 'canCancel': can_cancel, 'canEdit': can_edit,
-            'canOpenRegistration': can_open_registration}
+            'canOpenRegistration': can_open_registration, 'canCloseRegistration': can_close_registration,
+            'canDelete': can_delete}
 
 
 def row_dto(event: Event, *, confirming=None) -> dict:

@@ -29,6 +29,7 @@ export const adminEventCapabilitiesSchema = z.object({
   canUnpublish: capabilityFlagSchema,
   canCancel: capabilityFlagSchema,
   canEdit: capabilityFlagSchema,
+  canDelete: capabilityFlagSchema.optional(),
 })
 export type AdminEventCapabilities = z.infer<typeof adminEventCapabilitiesSchema>
 

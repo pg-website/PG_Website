@@ -180,6 +180,15 @@ export function createRealPublicApi(http: ApiRequester): PgPublicApi {
       return http.json(readSpec('/settings/public', opts), publicResponses.getPublicSettings)
     },
 
+    async getPlayerProfile(publicId, opts) {
+      try {
+        return await http.json(readSpec(`/players/${seg(publicId)}`, opts), publicResponses.getPlayerProfile)
+      } catch (error) {
+        if (isNotFound(error)) return null
+        throw error
+      }
+    },
+
     submitContact(input, key, opts) {
       return http.empty({
         method: 'POST',

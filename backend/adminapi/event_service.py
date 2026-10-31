@@ -323,6 +323,52 @@ def open_registration(request, event_id) -> Event:
     return event
 
 
+# ---------------------------------------------------------------- close registration
+
+def close_registration(request, event_id) -> Event:
+    with transaction.atomic():
+        event = _locked_event(event_id)
+        if event.status != 'registration_open':
+            raise NotPublishable(
+                blockers=[eb._b('NOT_OPEN', 'Only a registration-open event can have registrations closed.')],
+                fields={'form': ['Only a registration-open event can have registrations closed.']},
+            )
+        now = timezone.now()
+        event.registration_closes_at = now
+        _save(event, request.user, 'Closed registrations')
+        audit.write(
+            request,
+            action='event.close_registration',
+            object_type='event',
+            object_id=event.pk,
+            before={'registration_closes_at': None},
+            after={'registration_closes_at': iso(now)},
+        )
+    return event
+
+
+# ---------------------------------------------------------------- delete draft
+
+def delete_event(request, event_id) -> None:
+    with transaction.atomic():
+        event = _locked_event(event_id)
+        if event.status != 'draft':
+            raise ValidationFailed(
+                fields={'form': ['Only a draft event can be deleted.']}
+            )
+        event_pk = event.pk
+        event_slug = event.slug
+        event.delete()
+        audit.write(
+            request,
+            action='event.delete',
+            object_type='event',
+            object_id=event_pk,
+            before={'status': 'draft', 'slug': event_slug},
+            after={},
+        )
+
+
 # ---------------------------------------------------------------- E09 cancel
 
 def refundable_payments_exist(event_id) -> bool:
@@ -399,6 +445,17 @@ def complete(request, event_id, *, publish_archive: bool | None):
             if publish_archive and not event.archive_published:
                 event.archive_published_at = now
             event.archive_published = publish_archive
+        # Compute and store standings, rounds_played and winner from finalised results.
+        from registrations import room as reg_room
+        from registrations.models import Round
+        completed_rounds = list(Round.objects.filter(event=event).exclude(state='void'))
+        if completed_rounds:
+            rows = reg_room.standings(event, completed_rounds)
+            public = reg_room.public_rows(rows)
+            event.standings = public
+            event.rounds_played = len([r for r in completed_rounds if r.state == 'completed'])
+            # Winner: first place (lowest place number). Ties: keep the first alphabetically (already sorted).
+            event.winner = public[0]['identity'] if public else None
         _save(event, request.user, 'Completed the event')  # signal writes event/completed
         audit.write(request, action='event.complete', object_type='event', object_id=event.pk,
                     before={'status': before}, after={'status': 'completed', 'archivePublished': event.archive_published})

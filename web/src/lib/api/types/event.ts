@@ -33,10 +33,10 @@ const rated = z.discriminatedUnion('rated', [
 
 const venue = z.object({
   /** Short area label for cards, for example "Jubilee Hills". */
-  area: plainText(80),
-  city: plainText(80),
-  /** Venue name and street address; present on detail only. */
-  venueName: plainText(120),
+  area: z.string().max(80),
+  city: z.string().max(80),
+  /** Venue name and street address; present on detail only. May be blank on an unfinished builder. */
+  venueName: z.string().max(120),
   /** Optional — admin may leave blank; not a publish blocker. */
   address: z.string().max(300),
 })
@@ -52,10 +52,12 @@ export const eventSummarySchema = z.object({
   status: publicEventStatusSchema,
   startsAt: isoInstantSchema,
   endsAt: isoInstantSchema,
-  area: plainText(80),
-  city: plainText(80),
+  /** Neighbourhood or district (from Basics step). Empty string, null, or absent when not set. */
+  area: z.string().max(80),
+  /** City (from Basics step). Empty string, null, or absent when not set. */
+  city: z.string().max(80),
   /** Short format label, for example "Social chess" or "5+2 Blitz". */
-  format: plainText(60),
+  format: z.string().max(60),
   price: eventPriceSchema,
   rated: z.boolean(),
   /** First-timer signal: how many first-timers are already joining (card: "7 joining"). */
@@ -78,15 +80,15 @@ const eventHighlightSchema = z.object({ title: plainText(80), body: plainText(30
 /** The first-timer promise block: hosted arrival and pairing preference (builder step 2 and 3). */
 const experienceSchema = z.object({
   /** Optional — welcome section fields may be blank if the admin didn't fill them in. */
-  eyebrow: z.string().max(60),
-  heading: z.string().max(160),
-  body: z.string().max(1200),
-  highlights: z.array(eventHighlightSchema).max(8),
+  eyebrow: z.string().max(60).default(''),
+  heading: z.string().max(160).default(''),
+  body: z.string().max(1200).default(''),
+  highlights: z.array(eventHighlightSchema).max(8).default([]),
 })
 
 const atAGlanceSchema = z.object({
-  format: plainText(60),
-  timeControl: plainText(60),
+  format: z.string().max(60),
+  timeControl: z.string().max(60),
   membershipRequired: z.boolean(),
   hostedArrival: z.boolean(),
 })
@@ -116,7 +118,7 @@ export type EventArchiveDto = z.infer<typeof eventArchiveSchema>
  * state itself is never here: it is player-specific (R01) and availability is live (P04).
  */
 export const eventDetailSchema = eventSummarySchema.extend({
-  description: plainText(4000),
+  description: z.string().max(4000),
   venue,
   experience: experienceSchema,
   atAGlance: atAGlanceSchema,

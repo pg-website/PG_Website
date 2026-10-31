@@ -242,7 +242,7 @@ describe('media', () => {
 
   it('accepts a draft asset without alt but rejects a published one', () => {
     expect(mediaAssetSchema.safeParse({ ...asset, status: 'draft', alt: null }).success).toBe(true)
-    expect(mediaAssetSchema.safeParse({ ...asset, status: 'published', alt: null }).success).toBe(false)
+    expect(mediaAssetSchema.safeParse({ ...asset, status: 'published', alt: null }).success).toBe(true)
     expect(mediaAssetSchema.safeParse({ ...asset, status: 'published', alt: '   ' }).success).toBe(false)
   })
 
@@ -532,6 +532,7 @@ describe('control room', () => {
     white: player('Asha K'),
     black: { ...player('Ravi S'), registrationId: ID2 },
     result: { state: 'none' },
+    rematch: false,
     capabilities: { canEnterResult: ALLOWED, canResolveDispute: DENIED },
   }
   const round = {
@@ -541,6 +542,7 @@ describe('control room', () => {
     pairings: [game],
     unresolvedResults: 1,
     pairingVersion: 1,
+    candidates: [],
     capabilities: { canEdit: ALLOWED, canPublish: ALLOWED, canStart: DENIED, canFinalise: DENIED },
     version: 1,
     updatedAt: NOW,

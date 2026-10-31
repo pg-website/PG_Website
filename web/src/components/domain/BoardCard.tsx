@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Avatar } from '@/components/ui/Avatar'
+import { PlayerCard } from '@/components/player/PlayerCard'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { Surface } from '@/components/ui/Surface'
 import { Board } from '@/components/ui/icons/Board'
@@ -10,7 +10,11 @@ import type { PairingDto } from '@/lib/api/types/event-room'
 interface BoardCardProps {
   /** The caller's own published pairing. Display only. */
   pairing: Pick<PairingDto, 'board' | 'colour' | 'round' | 'timeControl'> & {
-    opponent: Pick<PairingDto['opponent'], 'displayName' | 'initials'> & { rating?: number | null }
+    opponent: Pick<PairingDto['opponent'], 'displayName' | 'initials'> & {
+      rating?: number | null
+      /** Opaque profile id; null or missing renders the opponent unlinked. */
+      publicId?: string | null
+    }
   }
   /** Result action slot: a Button or link rendered by the feature (the card holds no state). */
   action?: ReactNode
@@ -40,13 +44,21 @@ export function BoardCard({ pairing, action, secondaryAction, className }: Board
         <div className="flex min-w-0 flex-1 flex-col gap-2">
           <Eyebrow as="p">Round {pairing.round}</Eyebrow>
           <div className="flex min-w-0 items-center gap-3">
-            <Avatar name={name} size="md" decorative />
-            <p className="min-w-0 text-xl font-strong wrap-break-word">
-              {name}
-              {rating === null || rating === undefined ? null : (
-                <span className="font-mono text-sm text-muted"> {rating}</span>
-              )}
-            </p>
+            <PlayerCard
+              identity={{
+                displayName: name,
+                initials: pairing.opponent.initials,
+                publicId: pairing.opponent.publicId ?? null,
+                rating: null,
+                cityChapter: null,
+              }}
+              className="text-xl"
+              trailing={
+                rating === null || rating === undefined ? null : (
+                  <span className="font-mono text-sm text-muted">{rating}</span>
+                )
+              }
+            />
           </div>
           <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
             <span>

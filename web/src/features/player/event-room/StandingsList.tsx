@@ -1,4 +1,4 @@
-import { Avatar } from '@/components/ui/Avatar'
+import { PlayerCard } from '@/components/player/PlayerCard'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { Heading } from '@/components/ui/Heading'
 import { Surface } from '@/components/ui/Surface'
@@ -23,15 +23,18 @@ export function StandingsList({ rows, myPlace }: { rows: readonly StandingRow[];
               className="flex min-w-0 items-center gap-3 border-t border-line py-3 cv-auto cv-h-row"
             >
               <span className="w-8 shrink-0 font-mono text-sm">{row.place}</span>
-              <Avatar name={row.identity.displayName} size="sm" decorative />
-              <span className="min-w-0 flex-1 wrap-break-word">
-                {row.identity.displayName}
-                {row.place === myPlace ? <strong className="font-strong"> (you)</strong> : null}
-              </span>
-              <span className="shrink-0 text-right font-mono text-sm">
-                {row.score} pts
-                <span className="block text-muted">{row.rounds} played</span>
-              </span>
+              <PlayerCard
+                identity={row.identity}
+                variant="compact"
+                isYou={row.place === myPlace}
+                className="flex-1"
+                trailing={
+                  <span className="text-right font-mono text-sm">
+                    {row.score} pts
+                    <span className="block text-muted">{row.rounds} played</span>
+                  </span>
+                }
+              />
             </li>
           ))}
         </ol>

@@ -35,6 +35,7 @@ import {
   publishEventResultSchema,
   unpublishEventResultSchema,
   openRegistrationResultSchema,
+  closeRegistrationResultSchema,
 } from '@/lib/api/types/admin/event-builder'
 import { adminEventRowSchema } from '@/lib/api/types/admin/event-list'
 import { mediaAssetSchema, mediaCollectionAdminSchema, uploadTicketSchema } from '@/lib/api/types/admin/media'
@@ -75,6 +76,7 @@ import {
   registrationStateSchema,
   reserveResultSchema,
 } from '@/lib/api/types/registration'
+import { publicProfileSchema } from '@/lib/api/types/player-profile'
 import { publicSettingsSchema, siteSectionDtoSchema } from '@/lib/api/types/site-content'
 import { storyCardSchema, storyDetailSchema } from '@/lib/api/types/story'
 import { testimonialsSchema } from '@/lib/api/types/testimonial'
@@ -97,6 +99,7 @@ export const publicResponses = {
   getLegalPage: legalPageDtoSchema,
   getSitemapEntries: pageSchema(sitemapEntrySchema),
   getPublicSettings: publicSettingsSchema,
+  getPlayerProfile: publicProfileSchema,
 } as const
 
 export const authResponses = {
@@ -163,8 +166,10 @@ export const adminEventsResponses = {
   publishEvent: publishEventResultSchema,
   unpublishEvent: unpublishEventResultSchema,
   openRegistrations: openRegistrationResultSchema,
+  closeRegistrations: closeRegistrationResultSchema,
   cancelEvent: cancelEventResultSchema,
   completeEvent: completeEventResultSchema,
+  deleteEvent: z.object({}),
 } as const
 
 export const adminControlResponses = {

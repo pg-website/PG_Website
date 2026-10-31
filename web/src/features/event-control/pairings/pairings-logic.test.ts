@@ -8,8 +8,13 @@ import {
   isMovable,
   modelFromRound,
   openResultCount,
+  pairKey,
+  placeInSeat,
   planGenerate,
+  rematchBoards,
   resultActionFor,
+  resultProgress,
+  roundCounts,
   sameModel,
   swapPlayers,
 } from '@/features/event-control/pairings/pairings-logic'
@@ -28,6 +33,7 @@ function game(board: number, w: number, b: number, result: AdminResultDto = { st
     white: player(w),
     black: player(b),
     result,
+    rematch: false,
     capabilities: {
       canEnterResult: allowed,
       canResolveDispute: result.state === 'disputed' ? allowed : blocked,
@@ -199,5 +205,47 @@ describe('round selection and results', () => {
     ])
     expect(openResultCount(r)).toBe(2)
     expect(disputedGames(r).map((g) => g.board)).toEqual([2])
+  })
+})
+
+describe('editor helpers (TASK-006 to TASK-009)', () => {
+  it('places a seated player into another seat and moves the occupant into the vacated one', () => {
+    const model = modelFromRound(round(1, 'draft', [game(1, 1, 2), game(2, 3, 4), bye(3, 5)]))
+    const next = placeInSeat(model, 2, 'white', id(1))
+    expect(next.boards.map((b) => [b.white, b.black])).toEqual([
+      [id(3), id(2)],
+      [id(1), id(4)],
+    ])
+    expect(next.byes).toEqual([id(5)])
+  })
+
+  it('leaves a locked board alone when a player is placed on it', () => {
+    const played = round(1, 'live', [
+      game(1, 1, 2, { state: 'final', outcome: 'draw', decidedBy: 'players', adminReason: null }),
+      game(2, 3, 4),
+    ])
+    const model = modelFromRound(played)
+    expect(placeInSeat(model, 1, 'white', id(3))).toBe(model)
+  })
+
+  it('flags a rematch only on the board whose two players already met', () => {
+    const rematch = { ...game(2, 3, 4), rematch: true } as AdminPairingDto
+    const model = modelFromRound(round(1, 'draft', [game(1, 1, 2), rematch]))
+    expect(rematchBoards(model, new Set([pairKey(id(4), id(3))]))).toEqual([2])
+    expect(rematchBoards(model, new Set())).toEqual([])
+  })
+
+  it('counts boards, byes and players for the publish and finalise copy', () => {
+    const counts = roundCounts(round(1, 'draft', [game(1, 1, 2), game(2, 3, 4), bye(3, 5)]))
+    expect(counts).toEqual({ boards: 2, byes: 1, players: 5, gamePlayers: 4 })
+  })
+
+  it('reports results final out of games, ignoring byes', () => {
+    const r = round(1, 'live', [
+      game(1, 1, 2, { state: 'final', outcome: 'draw', decidedBy: 'players', adminReason: null }),
+      game(2, 3, 4),
+      bye(3, 5),
+    ])
+    expect(resultProgress(r)).toEqual({ final: 1, total: 2 })
   })
 })

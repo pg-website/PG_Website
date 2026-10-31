@@ -119,6 +119,16 @@ export function createRealAdminApi(http: ApiRequester, hooks: RealAdminHooks): P
           spec('POST', `${ev(eventId)}/open-registration`, opts, { idempotencyKey: key }),
           adminEventsResponses.openRegistrations,
         ),
+      closeRegistrations: (eventId, opts) =>
+        http.json(
+          spec('POST', `${ev(eventId)}/close-registration`, opts),
+          adminEventsResponses.closeRegistrations,
+        ),
+      deleteEvent: (eventId, opts) =>
+        http.json(
+          spec('DELETE', `${ev(eventId)}/delete`, opts, {}),
+          adminEventsResponses.deleteEvent,
+        ),
       cancelEvent: (eventId, input, key, opts) =>
         withConditionalStepUp((stepUpToken) =>
           http.json(

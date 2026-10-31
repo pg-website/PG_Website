@@ -31,6 +31,10 @@ export const boardPlayerSchema = z.object({
 })
 export type BoardPlayer = z.infer<typeof boardPlayerSchema>
 
+/** A checked-in or confirmed player who is not seated in this round yet (round `candidates`, editable rounds only). */
+export const candidateSchema = boardPlayerSchema.extend({ checkedIn: z.boolean() })
+export type Candidate = z.infer<typeof candidateSchema>
+
 /** Who put a result in, from the admin's point of view (no "me"/"opponent" here). */
 export const adminResultSourceSchema = z.enum(['white', 'black', 'admin'])
 
@@ -76,6 +80,8 @@ export const adminPairingSchema = z.discriminatedUnion('kind', [
     white: boardPlayerSchema,
     black: boardPlayerSchema,
     result: adminResultSchema,
+    /** Advisory: the two players already met in another published, live or completed round of this event. */
+    rematch: z.boolean(),
     capabilities: z.object({ canEnterResult: capabilityFlagSchema, canResolveDispute: capabilityFlagSchema }),
   }),
   z.object({
@@ -114,6 +120,8 @@ const roundBase = {
   unresolvedResults: countSchema,
   /** Increments on every pairing change, including post-publish corrections. */
   pairingVersion: versionSchema,
+  /** Unseated, confirmed, pairing-active players for the editor. Empty when the round is not editable. Max 500. */
+  candidates: z.array(candidateSchema).max(500),
   capabilities: roundCapabilitiesSchema,
   version: versionSchema,
   updatedAt: isoInstantSchema,

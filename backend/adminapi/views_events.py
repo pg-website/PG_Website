@@ -238,6 +238,25 @@ class OpenRegistrationView(AdminView):
         return run_idempotent(request, work, required=True)
 
 
+class CloseRegistrationView(AdminView):
+    def post(self, request, event_id):
+        def work():
+            event = svc.close_registration(request, event_id)
+            return ok({
+                'id': str(event.pk),
+                'status': event.status,
+                'closesAt': iso(event.registration_closes_at),
+                'version': event.version,
+            })
+        return run_idempotent(request, work)
+
+
+class DeleteEventView(AdminView):
+    def delete(self, request, event_id):
+        svc.delete_event(request, event_id)
+        return ok({})
+
+
 class CancelView(AdminView):
     def post(self, request, event_id):
         data = _object_body(request)

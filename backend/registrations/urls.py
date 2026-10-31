@@ -14,6 +14,8 @@ urlpatterns = [
     path('registrations/<str:registration_id>/accept-offer', views.AcceptOfferView.as_view()),
     path('payments/orders', views.PaymentOrderView.as_view()),
     path('payments/verify', views.PaymentVerifyView.as_view()),
+    # Public player profile (no auth)
+    path('players/<str:public_id>', views.PublicProfileView.as_view()),
     # M01-M04
     path('me/next-up', views.NextUpView.as_view()),
     path('me/recent-games', views.RecentGamesView.as_view()),

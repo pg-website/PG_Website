@@ -53,6 +53,7 @@ Generated 2026-10-27 from the mounted Django routes (`backend/*/urls.py`), compa
 | R04 | POST | `/api/payments/orders` | player | required | - | 200 Create or return the payment order (Idempotency-Key required) | `HOLD_EXPIRED` `ALREADY_REGISTERED` `PAYMENT_UNAVAILABLE` | Matches |
 | R05 | POST | `/api/payments/verify` | player | required | - | 200 Verify a Checkout payment (Idempotency-Key required) | `VALIDATION_FAILED` `INVALID_SIGNATURE` `PAYMENT_MISMATCH` `HOLD_EXPIRED` `PAYMENT_UNAVAILABLE` | Matches |
 | W01 | POST | `/api/webhooks/razorpay` | HMAC signature | - | - | 200 Razorpay webhook (inbound from Razorpay, not called by the web app) | - | Matches W01: raw body, no envelope, no bearer |
+| P-PLAYER | GET | `/api/players/{publicId}` | public | - | - | 200 Public player profile `{publicId, displayName, initials, cityChapter, ratings[{pool,value}], memberSince, eventsPlayed}`. Unauthenticated, 60/min/IP. | `NOT_FOUND` (identical for malformed, unknown, hidden, suspended, under-18) | PLAN-007. Additive: every PublicIdentity now has `publicId` (string or null; null when the name is hidden, suspended, under 18 by birthday, or missing user). |
 | M01 | GET | `/api/me/next-up` | player | - | - | 200 Next confirmed event (data is null when none) | - | Matches |
 | M02 | GET | `/api/me/recent-games` | player | - | - | 200 Recent final games (default page size 5) | - | Matches |
 | M03 | GET | `/api/me/people` | player | - | - | 200 Opponents played most (public identity only) | - | Matches |

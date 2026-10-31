@@ -5,6 +5,7 @@ import { deepFreeze } from '@/lib/mock/seeds/freeze'
 // 22 to 30 of the reference. Immutable.
 
 export const MOCK_PLAYER_IDENTITY: PublicIdentity = deepFreeze({
+  publicId: null,
   displayName: 'Asha Rao',
   initials: 'AR',
   rating: { pool: 'rapid', value: 1286 },
@@ -12,6 +13,7 @@ export const MOCK_PLAYER_IDENTITY: PublicIdentity = deepFreeze({
 })
 
 const person = (displayName: string, initials: string, rating: number | null, city: string | null): PublicIdentity => ({
+  publicId: null,
   displayName,
   initials,
   rating: rating === null ? null : { pool: 'rapid', value: rating },

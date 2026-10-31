@@ -78,7 +78,7 @@ export function ResultAction({ eventId, roundId, pairing, action, onDone }: Prop
       actionLabel="save this result"
       onConfirm={async (key) => {
         const trimmed = reason.trim()
-        if (outcome === null || trimmed === '') throw new ApiError('VALIDATION_FAILED', { status: 422 })
+        if (outcome === null) throw new ApiError('VALIDATION_FAILED', { status: 422 })
         await api.control.recordResult(
           eventId,
           roundId,
@@ -101,7 +101,7 @@ export function ResultAction({ eventId, roundId, pairing, action, onDone }: Prop
           </p>
         ) : null}
         <Field group label="Outcome" required>
-          <div className="grid gap-2 sm:grid-cols-3">
+          <div className="grid grid-cols-3 gap-2">
             {OUTCOMES.map((value) => (
               <ChoiceCard
                 key={value}
@@ -112,19 +112,19 @@ export function ResultAction({ eventId, roundId, pairing, action, onDone }: Prop
                 onCheckedChange={() => {
                   setOutcome(value)
                 }}
-                label={
+                label={value === 'white' ? 'White' : value === 'black' ? 'Black' : 'Draw'}
+                description={
                   value === 'white'
-                    ? `${pairing.white.name} won`
+                    ? `${pairing.white.name} wins`
                     : value === 'black'
-                      ? `${pairing.black.name} won`
-                      : 'Draw'
+                      ? `${pairing.black.name} wins`
+                      : undefined
                 }
-                description={value === 'draw' ? undefined : value === 'white' ? 'White' : 'Black'}
               />
             ))}
           </div>
         </Field>
-        <Field label="Reason" required hint="Up to 500 characters. Kept in the audit log.">
+        <Field label="Reason" optionalLabel hint="Up to 500 characters. Kept in the audit log.">
           <Textarea
             value={reason}
             maxLength={500}

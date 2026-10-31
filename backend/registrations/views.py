@@ -8,11 +8,12 @@ from __future__ import annotations
 import re
 
 from django.utils import timezone
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 
 from core import ratelimit
-from core.errors import ValidationFailed
+from core.clientip import client_ip
+from core.errors import NotFound, ValidationFailed
 from core.idempotency import run_idempotent
 from core.pagination import PagePagination
 from core.responses import iso, ok
@@ -20,12 +21,13 @@ from core.validation import Collector, require_object
 
 from payments import services as payment_services
 
-from . import room, rules, selectors, services
+from . import profile, room, rules, selectors, services
 from .dto import registration_dto
 from .models import Registration
 
 NO_STORE = 'no-store'
 SNAPSHOT_LIMIT = ratelimit.Limit(12, ratelimit.MINUTE)  # contract 2.10: 12 per minute per user
+PROFILE_LIMIT = ratelimit.Limit(60, ratelimit.MINUTE)  # per client IP, public read
 COMMAND_LIMIT = ratelimit.Limit(30, ratelimit.MINUTE)
 
 
@@ -36,6 +38,19 @@ class PlayerView(APIView):
         response = super().finalize_response(request, response, *args, **kwargs)
         response['Cache-Control'] = NO_STORE
         return response
+
+
+class PublicProfileView(APIView):
+    """GET /players/{publicId}. Unauthenticated. Unknown, malformed, hidden, suspended and minor all give the SAME 404."""
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def get(self, request, public_id):
+        ratelimit.check_and_hit('player-profile', client_ip(request), PROFILE_LIMIT)
+        data = profile.public_profile(public_id)
+        if data is None:
+            raise NotFound('Player not found.')
+        return ok(data, headers={'Cache-Control': 'public, max-age=0, s-maxage=60'})
 
 
 def _limit(request, scope, limit):

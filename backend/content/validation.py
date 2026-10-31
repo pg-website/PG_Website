@@ -288,6 +288,9 @@ check_at_a_glance = obj({'membershipRequired': boolean(), 'hostedArrival': boole
 _rating = nullable(obj({'pool': enum(RATING_POOLS), 'value': integer(0, 4000)}))
 check_identity = obj({
     'displayName': text(80), 'initials': text(3), 'rating': _rating, 'cityChapter': text(80, nullable=True),
+}, optional={
+    # Opaque public profile slug (null when the player is not linkable). Optional: snapshots from before it existed omit it.
+    'publicId': text(16, min_len=12, nullable=True),
 })
 check_standings = arr(obj({
     'place': integer(1, 10 ** 6),

@@ -50,7 +50,7 @@ export function ConfirmDialog({
       }}
       title={title}
       descriptionText={consequence}
-      size="sm"
+      size="md"
       role="alertdialog"
       dismissible={!loading}
       initialFocusRef={cancelRef}

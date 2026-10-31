@@ -1,8 +1,15 @@
+import base64
+import secrets
 import uuid
 
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.db import models
 from django.db.models.functions import Lower
+
+
+def new_public_slug() -> str:
+    """Opaque public player id: 60 random bits as 12 lowercase base32 chars. Unrelated to the pk, email or name."""
+    return base64.b32encode(secrets.token_bytes(8)).decode('ascii')[:12].lower()
 
 
 class UserManager(BaseUserManager):
@@ -36,6 +43,9 @@ class User(AbstractBaseUser):
     chess_com_handle = models.CharField(max_length=25, null=True, blank=True)
     fide_id = models.CharField(max_length=12, null=True, blank=True)
 
+    # Opaque public id (PLAN-007). Only ever exposed through registrations.dto.public_id_for (visibility-gated).
+    public_slug = models.CharField(max_length=16, unique=True, null=True, blank=True, editable=False)
+
     # Public identity visibility flags (M15). Email, phone and birthday have no flag by design.
     show_display_name = models.BooleanField(default=True)
     show_ratings = models.BooleanField(default=True)
@@ -62,6 +72,17 @@ class User(AbstractBaseUser):
             models.CheckConstraint(condition=models.Q(role__in=['player', 'admin']), name='users_role_valid'),
             models.CheckConstraint(condition=models.Q(status__in=['active', 'suspended']), name='users_status_valid'),
         ]
+
+    def save(self, *args, **kwargs):
+        if self.public_slug is None and self._state.adding:
+            slug = new_public_slug()
+            while User.objects.filter(public_slug=slug).exists():
+                slug = new_public_slug()
+            self.public_slug = slug
+            update_fields = kwargs.get('update_fields')
+            if update_fields is not None:
+                kwargs['update_fields'] = {*update_fields, 'public_slug'}
+        super().save(*args, **kwargs)
 
     @property
     def is_admin(self) -> bool:

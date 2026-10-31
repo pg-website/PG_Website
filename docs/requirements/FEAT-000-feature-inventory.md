@@ -485,7 +485,7 @@ Hosting (OQ-06, resolved): scheduled jobs and background workers run on Railway 
 | OQ-23 | Is an event waiver or conduct acknowledgement required, and what wording? | F-LEG-003 | Not required |
 | OQ-24 | When an event or story title changes, does the slug change? Should old slugs redirect? | F-SEO-006 | Slug fixed after publish; admin can change with an automatic redirect |
 | OQ-25 | Social matching: how does a player accept a suggested game, and how does a host override it? | F-PAIR-003 | Host-driven at launch; player acceptance later |
-| OQ-26 | Is there a public player profile page? The public-profile entity exists but no screen. | F-PROF-005 | No public player page; show name and rating only inside event views |
+| OQ-26 | Is there a public player profile page? The public-profile entity exists but no screen. | F-PROF-005 | No public player page; show name and rating only inside event views. **Superseded 2026-10-31 (PLAN-007, owner approved):** public page `/players/{publicId}` with an opaque `publicId` in identity; no other id is exposed. |
 | OQ-27 | League and workshop formats: needed at launch, and how do standings work across dates? | F-PAIR-010 | Later; launch with social, tournament and special |
 | OQ-28 | In-app notifications: is there an inbox or bell, or are notices shown only in the Event Room and by email? | F-NOTI-001 | Event Room banners and email only |
 

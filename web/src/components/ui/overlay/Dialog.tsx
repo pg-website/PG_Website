@@ -37,6 +37,11 @@ export interface DialogProps {
   dismissible?: boolean
   /** Accessible name of the close button. */
   closeLabel?: string
+  /**
+   * `sheet`: under 720px the dialog is a bottom sheet (anchored to the bottom edge, full width, safe-area padded) and
+   * keeps the same focus trap, Escape and focus return. From 720px it is the normal centred dialog. Default `centre`.
+   */
+  presentation?: 'centre' | 'sheet'
   children?: ReactNode
 }
 
@@ -59,6 +64,7 @@ export function Dialog({
   initialFocusRef,
   dismissible = true,
   closeLabel = 'Close',
+  presentation = 'centre',
   children,
 }: DialogProps) {
   const block = (event: Event) => {
@@ -70,6 +76,7 @@ export function Dialog({
       <RadixDialog.Portal>
         <OverlayBackdrop>
           <RadixDialog.Content
+            data-presentation={presentation}
             role={role}
             onOpenAutoFocus={(event) => {
               const target = initialFocusRef?.current
@@ -85,6 +92,8 @@ export function Dialog({
               'relative flex max-h-full w-full flex-col rounded-public border border-line bg-parchment text-ink shadow-brand outline-none',
               'transition-opacity duration-control ease-brand motion-reduce:transition-none starting:opacity-0',
               SIZE_CLASS[size],
+              presentation === 'sheet' &&
+                'max-sm:max-w-none max-sm:self-end max-sm:rounded-b-none max-sm:border-b-0 max-sm:max-h-5/6',
             )}
           >
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 pr-16">

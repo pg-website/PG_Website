@@ -27,6 +27,7 @@ export const ADMIN_EVENT_TABS = [
   'registrations',
   'check-in',
   'pairings',
+  'standings',
   'payments',
   'messages',
   'gallery',
@@ -110,6 +111,8 @@ export const ROUTES = [
   pub('community', '/community', 'Community', { screens: [6] }),
   pub('stories', '/stories', 'Stories', { screens: [7] }),
   pub('story', '/stories/[slug]', 'Story', { render: 'isr', screens: [59] }),
+  // Public player profile (PLAN-007): on demand, noindex (set in the page metadata).
+  pub('player-profile', '/players/[publicId]', 'Player profile', { render: 'isr' }),
   pub('contact', '/contact', 'Contact', { screens: [8] }),
   pub('privacy', '/privacy', 'Privacy policy', { screens: [9] }),
   pub('terms', '/terms', 'Terms of use', { screens: [10] }),
@@ -156,6 +159,9 @@ export const ROUTES = [
   client('handoff', 'handoff-design-system', '/handoff/design-system', 'Design system', { screens: [57] }),
   client('handoff', 'handoff-states', '/handoff/states', 'UI states', { screens: [58] }),
 ] as const
+
+/** Public player profile path (PLAN-007). `publicId` is the opaque slug from a PublicIdentity; the segment is encoded. */
+export const playerProfileHref = (publicId: string): `/players/${string}` => `/players/${encodeURIComponent(publicId)}`
 
 export type RouteId = (typeof ROUTES)[number]['id']
 

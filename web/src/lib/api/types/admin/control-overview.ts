@@ -67,6 +67,8 @@ export const eventOverviewSchema = z.object({
     canUnpublish: capabilityFlagSchema.optional(),
     /** Lifecycle button shown when status is published. Absent from an older server means not offered. */
     canOpenRegistration: capabilityFlagSchema.optional(),
+    /** Close registrations immediately. Shown when status is registration_open. */
+    canCloseRegistration: capabilityFlagSchema.optional(),
   }),
   serverNow: isoInstantSchema,
   version: versionSchema,

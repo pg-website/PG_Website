@@ -37,6 +37,9 @@ export const qk = {
   ratingTrend: (pool: RatingPool, days: number | 'default' = 'default') =>
     ['me', 'ratings', pool, 'trend', days] as const,
 
+  /** Public player profile (PLAN-007). */
+  playerProfile: (publicId: string) => ['players', publicId] as const,
+
   // ---- admin (PgAdminApi groups; second element is the group) ----
   admin: {
     all: () => ['admin'] as const,

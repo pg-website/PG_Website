@@ -19,7 +19,7 @@ export function AdminShell({ children }: AdminShellProps) {
     <div className="flex min-h-dvh flex-col md:flex-row">
       <AdminSidebar />
       <AdminTopBar />
-      <div className="min-w-0 flex-1 px-safe pb-safe md:pl-0">{children}</div>
+      <div className="min-w-0 flex-1 px-gutter pb-safe">{children}</div>
       <StepUpPrompt />
     </div>
   )

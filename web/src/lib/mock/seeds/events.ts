@@ -159,6 +159,7 @@ const monsoonOpen: EventDetailDto = {
   archive: {
     recap: 'Thirty-two players, nine rounds and a final-round decider that kept the room watching.',
     winner: {
+      publicId: null,
       displayName: 'Asha Rao',
       initials: 'AR',
       rating: { pool: 'rapid', value: 1720 },
@@ -168,6 +169,7 @@ const monsoonOpen: EventDetailDto = {
       {
         place: 1,
         identity: {
+          publicId: null,
           displayName: 'Asha Rao',
           initials: 'AR',
           rating: { pool: 'rapid', value: 1720 },
@@ -179,7 +181,7 @@ const monsoonOpen: EventDetailDto = {
       },
       {
         place: 2,
-        identity: { displayName: 'Dev Menon', initials: 'DM', rating: null, cityChapter: null },
+        identity: { publicId: null, displayName: 'Dev Menon', initials: 'DM', rating: null, cityChapter: null },
         score: 7.5,
         rounds: 9,
         rating: null,
@@ -187,6 +189,7 @@ const monsoonOpen: EventDetailDto = {
       {
         place: 3,
         identity: {
+          publicId: null,
           displayName: 'Ira Kapoor',
           initials: 'IK',
           rating: { pool: 'rapid', value: 1540 },

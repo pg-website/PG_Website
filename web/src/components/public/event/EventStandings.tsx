@@ -1,3 +1,4 @@
+import { PlayerCard } from '@/components/player/PlayerCard'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { Heading } from '@/components/ui/Heading'
 import { EmptyState } from '@/components/ui/feedback/EmptyState'
@@ -19,6 +20,8 @@ interface EventStandingsProps {
 const TITLE_ID = 'event-standings-title'
 const POOL_LABEL = { blitz: 'Blitz', rapid: 'Rapid', classical: 'Classical' } as const
 
+const playerCell = (row: StandingRow) => <PlayerCard identity={row.identity} variant="compact" />
+
 /**
  * Final standings (reference screen 04 `.data-table-static`) through ResponsiveTable: a real table from 720px and
  * labelled rows below, both in the raw HTML; stacked rows get `cv-auto` past the table threshold. Public identity only.
@@ -27,7 +30,7 @@ const POOL_LABEL = { blitz: 'Blitz', rapid: 'Rapid', classical: 'Classical' } as
 export function EventStandings({ id, standings, roundsPlayed, pool }: EventStandingsProps) {
   const columns: TableColumn<StandingRow>[] = [
     { id: 'place', header: 'Place', cell: (row) => row.place, align: 'end', priority: 'primary' },
-    { id: 'player', header: 'Player', cell: (row) => row.identity.displayName, rowHeader: true },
+    { id: 'player', header: 'Player', cell: playerCell, rowHeader: true },
     {
       id: 'score',
       header: 'Score',

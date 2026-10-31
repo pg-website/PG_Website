@@ -61,19 +61,89 @@ export function AdminDashboard() {
       >
         {(data) => (
           <>
-            <PageSection id="dash-event" eyebrow="Next up" title="Next or today's event">
-              {data.event === null ? (
-                <EmptyState
-                  title="No upcoming event"
-                  action={<CreateDraftButton>Create an event</CreateDraftButton>}
-                >
-                  Nothing is scheduled. Create an event to open registration.
-                </EmptyState>
-              ) : (
-                <NextEvent event={data.event} />
-              )}
-            </PageSection>
+            {/* Metric strip — 4 tiles, 2 cols on mobile, 4 on sm+ */}
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <MetricTile
+                label="Next event"
+                value={
+                  data.event === null
+                    ? '—'
+                    : data.event.capacity === null
+                      ? String(data.event.confirmed)
+                      : `${data.event.confirmed}/${data.event.capacity}`
+                }
+                hint={data.event === null ? 'No event scheduled' : data.event.title}
+              />
+              <MetricTile
+                label="First-timers"
+                value={data.event === null ? '0' : String(data.event.firstTimers)}
+                hint={data.event === null ? 'no event scheduled' : 'host introductions'}
+              />
+              <MetricTile
+                label="Payments pending"
+                value={String(data.pendingPayments.count)}
+                hint={formatInr(data.pendingPayments.amountPaise)}
+              />
+              <MetricTile
+                label="Website"
+                value={HEALTH_LABEL[data.websiteHealth.state]}
+                status={{
+                  label: data.websiteHealth.state.toUpperCase(),
+                  tone: HEALTH_TONE[data.websiteHealth.state],
+                }}
+                hint={
+                  data.websiteHealth.lastPublishedAt === null
+                    ? 'Nothing published yet'
+                    : `Last published ${formatEventDateTime(data.websiteHealth.lastPublishedAt)}`
+                }
+              />
+            </div>
 
+            {/* 2-col: next event + needs attention */}
+            <div className="grid min-w-0 gap-6 lg:grid-cols-2 lg:items-start">
+              <Surface as="div" tone="admin" padding="lg" className="flex min-w-0 flex-col gap-4">
+                <div>
+                  <p className="font-ui text-xs font-semibold tracking-widest text-copper uppercase">Today / Next</p>
+                  <h2 className="mt-1 font-display text-xl font-semibold">
+                    {data.event === null ? 'No upcoming event' : data.event.title}
+                  </h2>
+                </div>
+                {data.event === null ? (
+                  <EmptyState
+                    title="No upcoming event"
+                    action={<CreateDraftButton>Create an event</CreateDraftButton>}
+                  >
+                    Nothing is scheduled. Create an event to open registration.
+                  </EmptyState>
+                ) : (
+                  <NextEvent event={data.event} />
+                )}
+              </Surface>
+
+              <Surface as="div" tone="admin" padding="lg" className="flex min-w-0 flex-col gap-4">
+                <div>
+                  <p className="font-ui text-xs font-semibold tracking-widest text-copper uppercase">Needs Attention</p>
+                  <h2 className="mt-1 font-display text-xl font-semibold">Only the exceptions.</h2>
+                </div>
+                {data.attention.length === 0 ? (
+                  <EmptyState title="All clear">Nothing needs attention right now.</EmptyState>
+                ) : (
+                  <ol className="flex min-w-0 flex-col gap-3">
+                    {data.attention.map((item, i) => (
+                      <li key={item.kind} className="flex min-w-0 items-start gap-3">
+                        <span className="font-ui text-sm font-semibold text-copper tabular-nums">{i + 1}.</span>
+                        <div className="flex min-w-0 flex-1 flex-col gap-1">
+                          <p className="min-w-0 wrap-break-word">{item.message}</p>
+                          <TextLink href={item.href as Route}>Review</TextLink>
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </Surface>
+            </div>
+
+            {/* Status row — full width below the 2-col */}
             <PageSection
               id="dash-status"
               eyebrow="Status"
@@ -100,27 +170,6 @@ export function AdminDashboard() {
                   }
                 />
               </div>
-            </PageSection>
-
-            <PageSection id="dash-attention" eyebrow="Attention" title="Needs a look">
-              {data.attention.length === 0 ? (
-                <EmptyState title="All clear">Nothing needs attention right now.</EmptyState>
-              ) : (
-                <ul className="flex min-w-0 flex-col gap-3">
-                  {data.attention.map((item) => (
-                    <li key={item.kind}>
-                      <Surface
-                        as="div"
-                        tone="admin"
-                        className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
-                      >
-                        <p className="min-w-0 wrap-break-word">{item.message}</p>
-                        <TextLink href={item.href as Route}>Review</TextLink>
-                      </Surface>
-                    </li>
-                  ))}
-                </ul>
-              )}
             </PageSection>
           </>
         )}

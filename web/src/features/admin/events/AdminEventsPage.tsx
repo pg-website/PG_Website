@@ -1,9 +1,10 @@
 'use client'
 
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { Route } from 'next'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { ConfirmAction } from '@/components/admin/ConfirmAction'
 import { FilterBar } from '@/components/admin/FilterBar'
 import { Button } from '@/components/ui/Button'
 import { CreateDraftButton } from '@/features/admin/events/CreateDraftButton'
@@ -11,7 +12,7 @@ import { EmptyState } from '@/components/ui/feedback/EmptyState'
 import { ErrorState } from '@/components/ui/feedback/ErrorState'
 import { Field } from '@/components/ui/form/Field'
 import { Select } from '@/components/ui/form/Select'
-import { Heading } from '@/components/ui/Heading'
+import { PageIntro } from '@/components/ui/PageIntro'
 import { EVENT_STATUS_LABEL, EVENT_STATUS_TONE } from '@/components/domain/eventStatusLabels'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { ResponsiveTable } from '@/components/ui/table/ResponsiveTable'
@@ -19,6 +20,7 @@ import type { TableColumn } from '@/components/ui/table/tableTypes'
 import { TablePagination } from '@/components/ui/table/TablePagination'
 import { eventTypeLabel, pairingModeLabel } from '@/components/domain/eventLabels'
 import { useApi } from '@/lib/api/adapters/useApi.browser'
+import { useToast } from '@/components/ui/feedback/useToast'
 import type { AdminEventRowDto, AdminEventsQuery } from '@/lib/api/types/admin/event-list'
 import { EVENT_STATUSES, EVENT_TYPES, eventStatusSchema, eventTypeSchema } from '@/lib/api/types/event-state'
 import { formatEventDateTime } from '@/lib/format/date'
@@ -27,12 +29,50 @@ import { adminEventsQuery } from '@/lib/query/query-options/admin'
 
 const eventHref = (id: string, suffix = ''): Route => `/admin/events/${encodeURIComponent(id)}${suffix}` as Route
 
-function rowActions(row: AdminEventRowDto) {
-  if (!row.capabilities.canEdit.allowed) return null
+function RowActions({ row }: { row: AdminEventRowDto }) {
+  const api = useApi().admin
+  const queryClient = useQueryClient()
+  const toast = useToast()
+
   return (
-    <Button href={eventHref(row.id, '/edit')} variant="secondary">
-      Edit<span className="sr-only"> {row.title}</span>
-    </Button>
+    <div className="flex flex-wrap gap-2">
+      {row.capabilities.canEdit.allowed ? (
+        <Button href={eventHref(row.id, '/edit')} variant="secondary" size="sm">
+          Edit<span className="sr-only"> {row.title}</span>
+        </Button>
+      ) : null}
+      {row.capabilities.canDelete?.allowed === true ? (
+        <ConfirmAction
+          renderTrigger={(open) => (
+            <Button variant="secondary" size="sm" onClick={open}>
+              Delete<span className="sr-only"> {row.title}</span>
+            </Button>
+          )}
+          title="Delete this draft?"
+          consequence={`"${row.title}" will be permanently deleted. This cannot be undone.`}
+          confirmLabel="Delete event"
+          actionLabel="delete this event"
+          onConfirm={async () => {
+            // Optimistically remove the row from every cached events page.
+            // Use the 2-element prefix ['admin', 'events'] so TanStack's partial matching
+            // covers all filter/page variants (qk.admin.events() adds a 3rd queryPart element
+            // that won't match the stored keys which always carry the full filter string).
+            queryClient.setQueriesData<{ items: AdminEventRowDto[]; pagination: unknown }>(
+              { queryKey: ['admin', 'events'] },
+              (old) =>
+                old === undefined
+                  ? old
+                  : { ...old, items: old.items.filter((r) => r.id !== row.id) },
+            )
+            await api.events.deleteEvent(row.id)
+          }}
+          onDone={() => {
+            void queryClient.invalidateQueries({ queryKey: ['admin', 'events'] })
+            toast.success('Event deleted')
+          }}
+        />
+      ) : null}
+    </div>
   )
 }
 
@@ -170,7 +210,7 @@ export function AdminEventsPage() {
         getRowId={(row) => row.id}
         rowHref={(row) => eventHref(row.id)}
         loading={data === undefined}
-        actions={rowActions}
+        actions={(row) => <RowActions row={row} />}
         empty={
           <EmptyState
             framed={false}
@@ -212,13 +252,13 @@ export function AdminEventsPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-6 py-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <Heading level={1}>Events</Heading>
-          <p className="text-sm text-muted">Every room PG runs, in one place.</p>
-        </div>
-        <CreateDraftButton>New event</CreateDraftButton>
-      </div>
+      <PageIntro
+        variant="admin"
+        eyebrow="Events"
+        title="Every room PG runs, in one place."
+        description="Social nights, tournaments, workshops, leagues and special formats share the same event core."
+        actions={<CreateDraftButton>New event</CreateDraftButton>}
+      />
 
       {/* State chips — visible from 480 px (xs breakpoint). Reference screen 37. */}
       <div role="group" aria-label="Filter by state" className="hidden flex-wrap gap-2 xs:flex">

@@ -484,7 +484,8 @@ def overview(event: Event) -> dict:
         'runOfShow': run,
         'capabilities': {'canComplete': _can_complete(event, now), 'canCancel': caps['canCancel'],
                          'canPublish': caps['canPublish'], 'canUnpublish': caps['canUnpublish'],
-                         'canOpenRegistration': caps['canOpenRegistration']},
+                         'canOpenRegistration': caps['canOpenRegistration'],
+                         'canCloseRegistration': caps['canCloseRegistration']},
         'serverNow': iso(now), 'version': event.version,
     }
 
@@ -656,6 +657,17 @@ def update_recap(request, event_id, data) -> Event:
             event.archive_published = publish
             event.archive_published_at = timezone.now() if publish else event.archive_published_at
             action = 'archive.publish' if publish else 'archive.unpublish'
+            # Recompute standings when publishing so they reflect any post-completion corrections.
+            if publish:
+                from registrations import room as reg_room
+                from registrations.models import Round
+                rounds = list(Round.objects.filter(event=event).exclude(state='void'))
+                if rounds:
+                    rows = reg_room.standings(event, rounds)
+                    public = reg_room.public_rows(rows)
+                    event.standings = public
+                    event.rounds_played = len([r for r in rounds if r.state == 'completed'])
+                    event.winner = public[0]['identity'] if public else None
         if not after:
             return event
         # Saving a public event writes its `event/updated` outbox row in this transaction (content.signals).

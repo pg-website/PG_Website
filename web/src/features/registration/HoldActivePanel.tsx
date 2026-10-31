@@ -1,7 +1,6 @@
 'use client'
 
 import type { Route } from 'next'
-import Script from 'next/script'
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Banner } from '@/components/ui/feedback/Banner'
@@ -24,11 +23,13 @@ import type { RegistrationDto } from '@/lib/api/types/registration'
 import { qk, type AppQueryKey } from '@/lib/query/keys'
 import { useApiMutation } from '@/lib/query/mutation'
 import { envPublic } from '@/lib/env/env.public'
+import { loadRazorpay } from '@/lib/payments/load-razorpay'
+import { RazorpayScript } from '@/lib/payments/RazorpayScript'
 
 // Screen 18 (hold_active state). EV-04 / FE-08.
 // The registration hold exists. A countdown shows time remaining from the server clock. "Pay now" calls R04 to get
-// the Razorpay order, then opens the checkout modal. The Razorpay SDK is loaded by next/script (strategy
-// "afterInteractive") only when RAZORPAY_ENABLED=true, so it never reaches the main bundle.
+// the Razorpay order, then opens the checkout modal. The Razorpay SDK is loaded on demand by
+// loadRazorpay() (warmed on mount, awaited on click) only when RAZORPAY_ENABLED=true, so it never reaches the main bundle.
 //
 // In fake mode (RAZORPAY_ENABLED=false), a simulated-payment form is shown instead. The developer runs
 // `python manage.py razorpay_fake_pay <orderId>` and pastes the output to call R05.
@@ -63,8 +64,7 @@ export function HoldActivePanel({ event, registration }: HoldActivePanelProps) {
   const slug = event.slug
 
   const [checkout, setCheckout] = useState<CheckoutPhase>({ phase: 'idle', error: null })
-  // Tracks whether the Razorpay SDK (loaded by next/script) is ready.
-  const [sdkReady, setSdkReady] = useState(false)
+
 
   // Countdown from server's clock. When it reaches 0, re-read R01 (the server decides what expired means).
   const leftMs = useServerCountdown(registration.holdExpiresAt, registration.serverNow, () => {
@@ -149,9 +149,10 @@ export function HoldActivePanel({ event, registration }: HoldActivePanelProps) {
       return
     }
 
-    // SDK is loaded by <Script> in the JSX below when RAZORPAY_ENABLED. If somehow not ready yet, show an error.
-    if (!sdkReady || typeof window.Razorpay === 'undefined') {
-      setCheckout({ phase: 'idle', error: 'The payment page is still loading. Please wait a moment and try again.' })
+    try {
+      await loadRazorpay()
+    } catch {
+      setCheckout({ phase: 'idle', error: 'The payment page could not be loaded. Check your connection and try again.' })
       return
     }
 
@@ -279,22 +280,10 @@ export function HoldActivePanel({ event, registration }: HoldActivePanelProps) {
         : checkout.phase === 'verifying'
           ? 'Verifying payment'
           : undefined
-  // Disable if real checkout is enabled but the SDK hasn't loaded yet (brief window on first visit).
-  const sdkPending = envPublic.RAZORPAY_ENABLED && !sdkReady
-
   return (
     <>
-      {/*
-       * Load the Razorpay SDK via next/script (strategy="afterInteractive") when RAZORPAY_ENABLED.
-       * This keeps it out of the main bundle and defers it until hydration, per rule 6.8.
-       */}
-      {envPublic.RAZORPAY_ENABLED && (
-        <Script
-          src="https://checkout.razorpay.com/v1/checkout.js"
-          strategy="afterInteractive"
-          onLoad={() => setSdkReady(true)}
-        />
-      )}
+      {/* Starts loading on mount so the SDK is usually ready before the click; startPayment awaits it either way. */}
+      {envPublic.RAZORPAY_ENABLED && <RazorpayScript />}
       <Surface as="section" padding="lg" aria-labelledby="registration-screen-title" className="flex flex-col gap-4">
         <div data-registration-slot="FE-08" data-registration-screen="hold_active" className="flex flex-col gap-4">
           <Eyebrow>Your place is held</Eyebrow>
@@ -327,7 +316,7 @@ export function HoldActivePanel({ event, registration }: HoldActivePanelProps) {
             icon={<ArrowRight />}
             iconPosition="end"
             onClick={() => void startPayment()}
-            disabled={isBusy || sdkPending}
+            disabled={isBusy}
           >
             {envPublic.RAZORPAY_ENABLED ? 'Pay now' : 'Simulate payment (fake mode)'}
           </Button>

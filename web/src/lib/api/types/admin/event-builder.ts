@@ -287,6 +287,14 @@ export const openRegistrationResultSchema = z.object({
 })
 export type OpenRegistrationResult = z.infer<typeof openRegistrationResultSchema>
 
+export const closeRegistrationResultSchema = z.object({
+  id: uuidSchema,
+  status: eventStatusSchema,
+  closesAt: isoInstantSchema,
+  version: versionSchema,
+})
+export type CloseRegistrationResult = z.infer<typeof closeRegistrationResultSchema>
+
 /** E09 request. Refund and notification choices are explicit (admin confirmation, STATE-MACHINES "Event"). */
 export const cancelEventSchema = z.strictObject({
   reason: z.string().trim().min(1).max(500),

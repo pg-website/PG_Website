@@ -4,6 +4,7 @@ import type { Route } from 'next'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
+import { useAccountTarget } from '@/components/layout/PublicAccountLink'
 import { isActivePath, type PublicNavItem } from '@/components/layout/PublicNavLinks'
 import { Menu } from '@/components/ui/icons/Menu'
 import { isWebUrl } from '@/components/ui/linkHref'
@@ -14,8 +15,6 @@ import { cn } from '@/lib/cn'
 interface PublicMobileMenuProps {
   /** Primary navigation entries (same list as the desktop nav). */
   items: readonly PublicNavItem[]
-  /** Account link shown at the bottom of the menu ("Log in" for now; TASK-023 makes it auth-aware). */
-  account: PublicNavItem
   /** Primary call to action, repeated inside the menu as a full-width button. */
   action: PublicNavItem
   /** Accessible name of the navigation landmark inside the sheet. */
@@ -33,8 +32,9 @@ function relFor(href: string) {
  * from 480px) with `aria-expanded` and `aria-controls` set by Radix. The menu closes on link click and whenever the pathname changes (also for
  * back/forward navigation), using the "adjust state during render" pattern instead of an effect.
  */
-export function PublicMobileMenu({ items, account, action, label }: PublicMobileMenuProps) {
+export function PublicMobileMenu({ items, action, label }: PublicMobileMenuProps) {
   const pathname = usePathname()
+  const account = useAccountTarget()
   const [open, setOpen] = useState(false)
   const [openedOn, setOpenedOn] = useState(pathname)
 

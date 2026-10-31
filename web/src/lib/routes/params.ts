@@ -17,3 +17,10 @@ export function isValidEntityId(value: string): boolean {
 export function isAdminEventTab(value: string): value is AdminEventTab {
   return (ADMIN_EVENT_TABS as readonly string[]).includes(value)
 }
+
+const PUBLIC_ID = /^[a-z2-7]{12,16}$/
+
+/** Opaque public player id (PLAN-007): 12 to 16 lower-case base32 characters. */
+export function isValidPublicId(value: string): boolean {
+  return PUBLIC_ID.test(value)
+}

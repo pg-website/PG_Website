@@ -54,6 +54,7 @@ import type {
   PublishEventResult,
   UnpublishEventResult,
   OpenRegistrationResult,
+  CloseRegistrationResult,
   UpdateBuilderDraftInput,
 } from '@/lib/api/types/admin/event-builder'
 import type { AdminEventRowDto, AdminEventsQuery } from '@/lib/api/types/admin/event-list'
@@ -171,6 +172,11 @@ export interface PgAdminEventsApi {
   unpublishEvent(eventId: EventId, opts?: AdminOptionalKeyOpts): Promise<UnpublishEventResult>
   /** Opens registrations for a published event. Idempotency-Key required. */
   openRegistrations(eventId: EventId, key: IdempotencyKey, opts?: AdminRequestOpts): Promise<OpenRegistrationResult>
+  /** Closes registrations immediately for a registration_open event. */
+  closeRegistrations(eventId: EventId, opts?: AdminRequestOpts): Promise<CloseRegistrationResult>
+  /** Permanently deletes a draft event. Only allowed when canDelete.allowed is true. */
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  deleteEvent(eventId: EventId, opts?: AdminRequestOpts): Promise<{}>
   /** E09. Idempotency-Key required. Refunds are queued asynchronously. */
   cancelEvent(
     eventId: EventId,

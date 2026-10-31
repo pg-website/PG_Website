@@ -50,7 +50,6 @@ export const TILES = {
  * first visit and story 4:3, stands 4:5, final CTA 16:9 full bleed. Dark tones for the forest band and the final CTA.
  */
 export const HOME_IMAGES = {
-  'home-hero.png': { width: 1600, height: 1280, top: PALETTE.copperPale, bottom: PALETTE.sand },
   'home-card-1.png': { width: 960, height: 720, top: PALETTE.parchment, bottom: PALETTE.copperPale },
   'home-card-2.png': { width: 960, height: 720, top: PALETTE.parchmentSoft, bottom: PALETTE.stone },
   'home-card-3.png': { width: 960, height: 720, top: PALETTE.copperSoft, bottom: PALETTE.paperDeep },

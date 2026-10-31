@@ -49,6 +49,7 @@ const FEAT_001_PAGE_ROUTES = [
   '/handoff',
   '/admin/events/[id]',
   '/admin/events/[id]/edit',
+  '/players/[publicId]',
 ]
 
 describe('route registry', () => {
@@ -77,7 +78,7 @@ describe('route registry', () => {
     const groupKey = { public: 'public', auth: 'auth', app: 'player', admin: 'admin', handoff: 'handoff' } as const
     // Additions beyond the manifest: story detail (row 59, OQ-01) and the Control Room routes (the manifest lists
     // only /admin/events/:id; FEAT-001 splits it into tabs and an edit entry).
-    const additions = new Set(['/stories/[slug]', '/admin/events/[id]/[tab]', '/admin/events/[id]/edit'])
+    const additions = new Set(['/stories/[slug]', '/players/[publicId]', '/admin/events/[id]/[tab]', '/admin/events/[id]/edit'])
     for (const group of ROUTE_GROUPS) {
       const registry = routesInGroup(group)
         .map((route) => route.pattern)

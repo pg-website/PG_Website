@@ -24,9 +24,9 @@ export function mockImage(tile: TileName, alt: string): MediaRef {
  */
 const HOME_IMAGES = {
   hero: {
-    src: '/placeholders/home-hero.png',
-    width: 1600,
-    height: 1280,
+    src: '/assets/home-hero-players-at-board.avif',
+    width: 2200,
+    height: 2750,
     blurDataUrl:
       'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAIElEQVR42mN4dWEPVsTEwMSMFTH9Z2LGivDpwI6oaAcAFH0st3nCjIoAAAAASUVORK5CYII=',
   },

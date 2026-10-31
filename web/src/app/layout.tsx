@@ -20,7 +20,7 @@ export const viewport: Viewport = {
 // Root layout reads no cookies/headers/searchParams so (public) stays prerenderable.
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={fontVariables}>
+    <html lang="en" className={fontVariables} data-scroll-behavior="smooth">
       <body>{children}</body>
     </html>
   )

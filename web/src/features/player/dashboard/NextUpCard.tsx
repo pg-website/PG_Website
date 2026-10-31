@@ -59,6 +59,7 @@ export function NextUpCard({ nextUp }: { nextUp: NextUpDto }) {
               opponent: {
                 displayName: pairing.opponent.displayName,
                 initials: pairing.opponent.initials,
+                publicId: pairing.opponent.publicId,
                 rating: pairing.opponent.rating?.value ?? null,
               },
             }}

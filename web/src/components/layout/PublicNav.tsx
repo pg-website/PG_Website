@@ -1,6 +1,6 @@
 import type { Route } from 'next'
-import Link from 'next/link'
 import { BrandMark } from '@/components/layout/BrandMark'
+import { PublicAccountLink } from '@/components/layout/PublicAccountLink'
 import { PublicMobileMenu } from '@/components/layout/PublicMobileMenu'
 import { PublicNavLinks, type PublicNavItem } from '@/components/layout/PublicNavLinks'
 import { Shell } from '@/components/layout/Shell'
@@ -61,16 +61,11 @@ export function PublicNav({ items, action = DEFAULT_NAV_ACTION }: PublicNavProps
         </div>
         <PublicNavLinks items={navItems} label={NAV_LABEL} />
         <div className="ml-auto flex min-w-0 items-center justify-end gap-2 md:ml-0 md:flex-1 md:gap-4">
-          <Link
-            href={LOGIN_LINK.href as Route}
-            className="tap hidden text-sm whitespace-nowrap text-ink-soft underline-offset-4 hover:text-ink hover:underline md:inline-flex"
-          >
-            {LOGIN_LINK.label}
-          </Link>
+          <PublicAccountLink />
           <Button href={cta.href as Route} icon={<ArrowRight size="sm" />} iconPosition="end" className="shrink">
             {cta.label}
           </Button>
-          <PublicMobileMenu items={navItems} account={LOGIN_LINK} action={cta} label={NAV_LABEL} />
+          <PublicMobileMenu items={navItems} action={cta} label={NAV_LABEL} />
         </div>
       </Shell>
     </header>

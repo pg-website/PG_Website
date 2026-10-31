@@ -168,6 +168,11 @@ export function createMockPublicApi(options: MockAdapterOptions = {}): PgPublicA
       await gate(opts)
       return MOCK_SETTINGS
     },
+    async getPlayerProfile(_publicId, opts) {
+      await gate(opts)
+      // No mock profile data on purpose (PLAN-007): public profiles exist only against the real backend.
+      throw new ApiError('HTTP_5XX', { status: 501, detail: `${MOCK_SENTINEL} player profile is not available in mock` })
+    },
     async submitContact(_input, _key, opts) {
       // A mutation: browser only (ARCH-001 11.4). The body is never stored or logged.
       if (typeof window === 'undefined') throw new ApiError('MOCK_SERVER_MUTATION', { status: 0 })

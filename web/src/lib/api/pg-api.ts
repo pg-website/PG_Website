@@ -28,6 +28,7 @@ import type { EventType, EventAudience } from '@/lib/api/types/event-state'
 import type { RatingPool } from '@/lib/api/types/identity'
 import type { LegalPage, LegalPageDto, SitemapEntryDto } from '@/lib/api/types/legal-sitemap'
 import type { GameDto, MyEventsQuery, MyRegistrationDto, NextUpDto, PersonDto } from '@/lib/api/types/my-events'
+import type { PublicProfileDto } from '@/lib/api/types/player-profile'
 import type { Page, PageQuery } from '@/lib/api/types/pagination'
 import type { PaymentOrderDto, CreateOrderInput, VerifyPaymentInput } from '@/lib/api/types/payment'
 import type { IdempotencyKey, Slug } from '@/lib/api/types/primitives'
@@ -120,6 +121,8 @@ export interface PgPublicApi {
   getSitemapEntries(query?: PageQuery, opts?: ReadOpts): Promise<Page<SitemapEntryDto>>
   /** P12 (inferred). */
   getPublicSettings(opts?: ReadOpts): Promise<PublicSettingsDto>
+  /** PLAN-007. Resolves null for an unknown, hidden or suspended player (the page calls notFound()). */
+  getPlayerProfile(publicId: string, opts?: ReadOpts): Promise<PublicProfileDto | null>
   /** P11. 202; resolves when accepted. Browser only in practice (a mutation). */
   submitContact(input: ContactInput, key: IdempotencyKey, opts?: RequestOpts): Promise<void>
 }

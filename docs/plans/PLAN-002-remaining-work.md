@@ -7,7 +7,7 @@
 
 ---
 
-> **Progress (2026-10-28):** [x] = done. Stage B: BE-00 to BE-14 done (BE-G code-review gate not run, by owner request). Stage F: FE-01, FE-02, FE-12 (real admin client, no mocks), FE-13, FE-14 done; FE-03 and FE-04 still open. Admin screens: FE-15, FE-16, FE-17 and FE-30 done (typecheck/lint only, not yet checked against the live backend); FE-25 in progress.
+> **Progress (2026-10-31):** [x] = done. Stage B: ALL 16 items COMPLETE (BE-00 to BE-14 + BE-G). Stage F: 26/42 items done. FE-01 to FE-02, FE-12 to FE-14, FE-15 to FE-17, FE-25 to FE-33 complete. FE-03, FE-04, FE-09 to FE-11, FE-18 to FE-24, FE-34 to FE-40 and FE-G remain.
 
 ## 1. Current state (verified in the repo)
 
@@ -88,7 +88,7 @@ Order is chosen so each task only depends on earlier ones, and so the shared pie
 | 13 | [x] BE-12 | Scheduler and worker commands (idempotent, row-locked, log name + count): event status transitions (replaces any write-on-GET), reminders (24 h, check-in open, post-event), hourly reconcile, revalidation retry (30 s), daily token/idempotency cleanup, message delivery worker, rating processing worker; wire to `Procfile` | backend-engineer | M | [x] BE-11 |
 | 14 | [x] BE-13 | Legacy retirement and data hygiene: remove or rebuild unmounted `tournaments/`, `payments/`, `gallery/` (keep `glicko2`/`swiss` only if still referenced), drop dead models via migration, Supabase lockdown migration (RLS on, no policies) with a check, update `backend/README.md` and `.env.example` (`PREVIEW_SECRET`, Razorpay, storage, email vars) | backend-engineer | M | [x] BE-12 |
 | 15 | [x] BE-14 | Contract reconciliation: diff every implemented route against the contract section 3 and `web/src/lib/api/types/*`; fix response-shape drift on the backend side; produce `docs/architecture/pgapi-contract/ENDPOINTS-IMPLEMENTED.md` (this is the content of PLAN-001 TASK-022 from the backend side) | backend-engineer | M | [x] BE-13 |
-| 16 | **BE-G** | Backend gate: read-only review of the diff against ARCH-001-backend-contract and DEC-011 (envelope); verify section 5 checklist; PASS/FAIL list | code-reviewer | S | [x] BE-14 |
+| 16 | [x] **BE-G** | Backend gate: read-only review of the diff against ARCH-001-backend-contract and DEC-011 (envelope); verify section 5 checklist; PASS/FAIL list | code-reviewer | S | [x] BE-14 |
 
 ### Acceptance criteria per task (summary)
 
@@ -119,8 +119,8 @@ Same package (`web/`), so tasks run in the order below. All are `frontend-engine
 |---|----|------|--------------|-----|-----------|
 | 1 | [x] FE-01 | Real adapter bring-up: finish `adapters/real.ts` for public, auth and player endpoints; env switch `NEXT_PUBLIC_USE_MOCKS=false`; `/api/*` rewrite to `API_INTERNAL_URL`; fix any DTO/zod drift against `ENDPOINTS-IMPLEMENTED.md`; update `types/*` and mocks to match | TASK-022 (frontend half) | M | BE-G |
 | 2 | [x] FE-02 | Cookie token mode against backend `AUTH_TOKEN_MODE=cookie` (CSRF header, refresh/logout), step-up flow wired to `/auth/step-up` | TASK-125 follow-up | S | [x] FE-01 |
-| 3 | [x] FE-03 | Revalidation handshake: verify `/api/revalidate` accepts backend-signed calls (shared `REVALIDATE_SECRET`), tag mapping for new types (`player`, `result`, `media`, `legal`, `site/*`) | TASK-114 follow-up | S | [x] FE-01 |
-| 4 | [x] FE-04 | Draft preview: `/api/draft`, `/api/draft/exit`, preview banner, `createPreviewLink` in `PgAdminApi`, exchange with `/api/preview/exchange`, mock preview route | TASK-119 | M | FE-03, BE-09 |
+| 3 | FE-03 | Revalidation handshake: verify `/api/revalidate` accepts backend-signed calls (shared `REVALIDATE_SECRET`), tag mapping for new types (`player`, `result`, `media`, `legal`, `site/*`) | TASK-114 follow-up | S | [x] FE-01 |
+| 4 | FE-04 | Draft preview: `/api/draft`, `/api/draft/exit`, preview banner, `createPreviewLink` in `PgAdminApi`, exchange with `/api/preview/exchange`, mock preview route | TASK-119 | M | FE-03, BE-09 |
 
 ## F-B. Remaining player-facing screens
 
@@ -130,9 +130,9 @@ Same package (`web/`), so tasks run in the order below. All are `frontend-engine
 | 6 | [x] FE-06 | Registration: free confirmation and success (19, 21) | TASK-056 | M | FE-05 |
 | 7 | [x] FE-07 | Registration: waitlist join and accept-offer (20) | TASK-058 | S | FE-05 |
 | 8 | [x] FE-08 | Registration: paid flow, hold countdown from `holdExpiresAt/serverNow`, lazy Razorpay checkout, confirming-payment polling | TASK-057 | L | FE-05, BE-03 |
-| 9 | FE-09 | OAuth callback screen (15), feature-flagged | TASK-052 | S | [x] FE-01 |
-| 10 | FE-10 | Rating trend chart (lazy, accessible, table alternative) | TASK-067 | M | [x] FE-01 |
-| 11 | FE-11 | Handoff routes: `/handoff`, design-system, UI states (mock/dev only; `notFound()` in production) | TASK-039 | M | FE-10 |
+| 9 | ⏳ FE-09 | OAuth callback screen (15), feature-flagged | TASK-052 | S | [x] FE-01 |
+| 10 | ⏳ FE-10 | Rating trend chart (lazy, accessible, table alternative) | TASK-067 | M | [x] FE-01 |
+| 11 | ⏳ FE-11 | Handoff routes: `/handoff`, design-system, UI states (mock/dev only; `notFound()` in production) | TASK-039 | M | FE-10 |
 
 ## F-C. Admin foundation
 
@@ -149,13 +149,13 @@ Same package (`web/`), so tasks run in the order below. All are `frontend-engine
 | 15 | [x] FE-15 | Admin dashboard | TASK-070 | 32 | M | D01 |
 | 16 | [x] FE-16 | Admin events list with state filters | TASK-076 | 37 | M | E01 |
 | 17 | [x] FE-17 | Payments admin: ledger, mismatch, reconcile, refund | TASK-090 | 55 | M | G04-G06 |
-| 18 | FE-18 | Media library: grid, search, upload with progress (signed URL flow) | TASK-071 | 34 left | M | S07-S11 |
-| 19 | FE-19 | Media collection editor: static/carousel, order, alt, focal-point picker (lazy) | TASK-072 | 34 right | L | S12 |
-| 20 | FE-20 | Website CMS: per-section lazy editors, draft/publish, preview link | TASK-073 | 33 | L | S01-S06, PV01 |
-| 21 | FE-21 | Stories admin with slug rules and publish | TASK-074 | 35 | M | S13, S14, E05 |
-| 22 | FE-22 | Testimonials admin with consent/publish gating | TASK-075 | 36 | M | S15, S16 |
-| 23 | FE-23 | Players admin (search, record, role change with step-up) | TASK-089 | 54 | M | G01-G03 |
-| 24 | FE-24 | Settings admin (no secrets, integration status) | TASK-091 | 56 | M | G07, G08 |
+| 18 | ⏳ FE-18 | Media library: grid, search, upload with progress (signed URL flow) | TASK-071 | 34 left | M | S07-S11 |
+| 19 | ⏳ FE-19 | Media collection editor: static/carousel, order, alt, focal-point picker (lazy) | TASK-072 | 34 right | L | S12 |
+| 20 | ⏳ FE-20 | Website CMS: per-section lazy editors, draft/publish, preview link | TASK-073 | 33 | L | S01-S06, PV01 |
+| 21 | ⏳ FE-21 | Stories admin with slug rules and publish | TASK-074 | 35 | M | S13, S14, E05 |
+| 22 | ⏳ FE-22 | Testimonials admin with consent/publish gating | TASK-075 | 36 | M | S15, S16 |
+| 23 | ⏳ FE-23 | Players admin (search, record, role change with step-up) | TASK-089 | 54 | M | G01-G03 |
+| 24 | ⏳ FE-24 | Settings admin (no secrets, integration status) | TASK-091 | 56 | M | G07, G08 |
 | 25 | [x] FE-25 | Event Builder framework per DEC-023 (vanilla store, per-step RHF, debounce, one-step mobile mode, publish blockers) | TASK-077 | 38-45 | L | E02-E06 |
 | 26 | [x] FE-26 | Builder steps 1-2: Basics (slug check) and Experience | TASK-078 | 38, 39 | M | E03/E04 |
 | 27 | [x] FE-27 | Builder steps 3-4: Registration and Payment | TASK-079 | 40, 41 | M | E04 |
@@ -165,20 +165,20 @@ Same package (`web/`), so tasks run in the order below. All are `frontend-engine
 | 31 | [x] FE-31 | Control: Overview and Registrations | TASK-083 | 46, 47 | M | C01-C03 |
 | 32 | [x] FE-32 | Control: Check-in desk (phone-first) | TASK-084 | 48 | M | C04, C05 |
 | 33 | [x] FE-33 | Control: Pairings and rounds (draft/publish/start/finalise, post-publish reason) | TASK-085 | 49 | L | C06-C12 |
-| 34 | FE-34 | Control: Payments tab | TASK-086 | 50 | S | C13, G05 |
-| 35 | FE-35 | Control: Messages tab | TASK-087 | 51 | M | C14 |
-| 36 | FE-36 | Control: Gallery/recap and Audit tabs | TASK-088 | 52, 53 | M | C16, C17 |
+| 34 | ⏳ FE-34 | Control: Payments tab | TASK-086 | 50 | S | C13, G05 |
+| 35 | ⏳ FE-35 | Control: Messages tab | TASK-087 | 51 | M | C14 |
+| 36 | ⏳ FE-36 | Control: Gallery/recap and Audit tabs | TASK-088 | 52, 53 | M | C16, C17 |
 
 ## F-E. Delivery
 
 | # | ID | Task | PLAN-001 ref | Est | Depends on |
 |---|----|------|--------------|-----|-----------|
-| 37 | FE-37 | CI implementation per OPS-002 (workflows, CODEOWNERS, dependabot, supply-chain script, exceptions registry, PR template); fold contract stub decision OD-CI-01 (recommend: small in-repo stub or point build at the real staging API) | TASK-129 | L | FE-36 |
-| 38 | FE-38 | Performance budget check: First Load JS per route vs `budgets.json`, bundle-analyzer evidence for admin never loading on public routes, Lighthouse mobile run; fix regressions | TASK-099 | M | FE-37 |
-| 39 | FE-39 | Deployment config: Vercel (`sin1`) project settings, `/api/*` rewrite to Railway, env matrix (prod/staging/preview), Firewall and Deployment Protection per OPS-001, ISR persistence note | TASK-105 | M | FE-38 |
-| 40 | FE-40 (optional) | PWA basics (manifest, icons, offline page) | TASK-103 | S | FE-39 |
-| 41 | **FE-G** | Frontend gate: read-only review of `web/` against ARCH-001 and the web-frontend rule | code-reviewer | M | FE-39 |
-| 42 | FINAL | Workflow readiness gate (READY/BLOCKED) | workflow-controller | S | FE-G |
+| 37 | ⏳ FE-37 | CI implementation per OPS-002 (workflows, CODEOWNERS, dependabot, supply-chain script, exceptions registry, PR template); fold contract stub decision OD-CI-01 (recommend: small in-repo stub or point build at the real staging API) | TASK-129 | L | FE-36 |
+| 38 | ⏳ FE-38 | Performance budget check: First Load JS per route vs `budgets.json`, bundle-analyzer evidence for admin never loading on public routes, Lighthouse mobile run; fix regressions | TASK-099 | M | FE-37 |
+| 39 | ⏳ FE-39 | Deployment config: Vercel (`sin1`) project settings, `/api/*` rewrite to Railway, env matrix (prod/staging/preview), Firewall and Deployment Protection per OPS-001, ISR persistence note | TASK-105 | M | FE-38 |
+| 40 | ⏳ FE-40 (optional) | PWA basics (manifest, icons, offline page) | TASK-103 | S | FE-39 |
+| 41 | ⏳ **FE-G** | Frontend gate: read-only review of `web/` against ARCH-001 and the web-frontend rule | code-reviewer | M | FE-39 |
+| 42 | ⏳ FINAL | Workflow readiness gate (READY/BLOCKED) | workflow-controller | S | FE-G |
 
 ### Stage F exit
 

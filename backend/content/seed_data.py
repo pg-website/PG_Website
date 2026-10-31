@@ -22,7 +22,7 @@ def tile(name, alt, x=0.5, y=0.5):
 
 _B = 'data:image/png;base64,'
 HOME_IMAGES = {
-    'hero': ('/placeholders/home-hero.png', 1600, 1280,
+    'hero': ('/assets/home-hero-players-at-board.avif', 2200, 2750,
              _B + 'iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAIElEQVR42mN4dWEPVsTEwMSMFTH9Z2LGivDpwI6oaAcAFH0st3nCjIoAAAAASUVORK5CYII='),
     'card1': ('/placeholders/home-card-1.png', 960, 720,
               _B + 'iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAHUlEQVR42mP48v4ZVsT0/88vrIjp3+9fWNGA6gAA5rC7v1DWZA8AAAAASUVORK5CYII='),

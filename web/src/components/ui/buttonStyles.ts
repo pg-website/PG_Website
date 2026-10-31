@@ -77,7 +77,7 @@ export function buttonClassName({ variant, size, fullWidth, blocked, loading, cl
       ? loading
         ? 'cursor-progress'
         : 'cursor-not-allowed opacity-60'
-      : cn(HOVER_CLASS[variant], 'lift-on-hover'),
+      : cn(HOVER_CLASS[variant], 'cursor-pointer lift-on-hover'),
     className,
   )
 }

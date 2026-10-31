@@ -1083,6 +1083,21 @@ paths:
                           properties:
                             identity: {$ref: '#/components/schemas/PublicIdentity'}
                             games: {type: integer}
+  /players/{publicId}:
+    get:
+      tags: [Public]
+      summary: Public player profile (PLAN-007)
+      description: Unauthenticated, 60 per minute per IP. Identical 404 NOT_FOUND for malformed, unknown, hidden, suspended or under-18 players.
+      parameters:
+        - {name: publicId, in: path, required: true, schema: {type: string, pattern: '^[a-z2-7]{12,16}$'}}
+      responses:
+        '200':
+          description: Public profile
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PublicProfile'}
+        '404':
+          description: Player not found
   /me/registrations:
     get:
       tags: [Player area]
@@ -4229,6 +4244,28 @@ components:
             pool: {type: string}
             value: {type: integer}
         cityChapter: {type: string, nullable: true}
+        publicId:
+          type: string
+          nullable: true
+          pattern: '^[a-z2-7]{12,16}$'
+          description: Opaque public player id (never the user id). Null when the display name is hidden, the account is suspended, the player is under 18, or the user is missing.
+    PublicProfile:
+      type: object
+      properties:
+        publicId: {type: string, pattern: '^[a-z2-7]{12,16}$'}
+        displayName: {type: string}
+        initials: {type: string}
+        cityChapter: {type: string, nullable: true}
+        ratings:
+          type: array
+          description: One entry per pool that has a rating; empty when the player hides ratings.
+          items:
+            type: object
+            properties:
+              pool: {type: string, enum: [classical, rapid, blitz]}
+              value: {type: integer}
+        memberSince: {type: integer, description: Year}
+        eventsPlayed: {type: integer}
     CheckIn:
       type: object
       description: status is not_open, open, checked_in, manual_required or closed.

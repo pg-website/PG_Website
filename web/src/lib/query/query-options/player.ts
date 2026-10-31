@@ -28,6 +28,14 @@ export const meQuery = (api: PgApi) =>
     staleTime: STALE_TIME.default,
   })
 
+// ---------- public player profile (PLAN-007) ----------
+
+export const playerProfileQuery = (api: PgApi, publicId: string) =>
+  queryOptions({
+    queryKey: qk.playerProfile(publicId),
+    queryFn: ({ signal }) => api.public.getPlayerProfile(publicId, { signal }),
+  })
+
 // ---------- dashboard (M01 to M04) ----------
 
 export const nextUpQuery = (api: PgApi) =>

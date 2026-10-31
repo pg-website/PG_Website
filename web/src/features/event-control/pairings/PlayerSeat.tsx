@@ -1,15 +1,15 @@
 'use client'
 
 import { Button } from '@/components/ui/Button'
-import type { BoardPlayer } from '@/lib/api/types/admin/control-rounds'
+import type { PlayerInfo } from '@/features/event-control/pairings/pairings-logic'
 
 interface Props {
-  player: BoardPlayer
+  player: Pick<PlayerInfo, 'name' | 'rating'>
   /** Spoken context ("Board 3 white"). */
   label: string
   selected: boolean
   movable: boolean
-  onPick: (registrationId: string) => void
+  onPick: () => void
 }
 
 /** One player in the pairings editor: a real button, so it works with a keyboard, a screen reader and touch. */
@@ -20,9 +20,7 @@ export function PlayerSeat({ player, label, selected, movable, onPick }: Props) 
       size="md"
       className="w-full justify-start text-left"
       disabled={!movable}
-      onClick={() => {
-        onPick(player.registrationId)
-      }}
+      onClick={onPick}
     >
       <span className="sr-only">{label}: </span>
       {selected ? <span className="sr-only">(selected) </span> : null}

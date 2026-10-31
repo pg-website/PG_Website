@@ -5,6 +5,7 @@ import {
   countSchema,
   focalSchema,
   backendUrlSchema,
+  isBackendUrl,
   isoInstantSchema,
   mediaSrcSchema,
   mediaCollectionIdSchema,
@@ -31,10 +32,16 @@ export const uploadRequestSchema = z.strictObject({
 })
 export type UploadRequest = z.infer<typeof uploadRequestSchema>
 
-/** S07 response. `uploadUrl` must be on the Storage host: the adapter checks it (ARCH-001 11.6). */
+/** S07 response. `uploadUrl` must be on the Storage host: the adapter checks it (ARCH-001 11.6).
+ * In dev (STORAGE_MODE=fake) the server returns a relative path (/api/dev-storage/…) — accepted in non-production. */
+const uploadUrlSchema =
+  process.env.NODE_ENV !== 'production'
+    ? z.string().refine((v) => v.startsWith('/') || isBackendUrl(v), 'URL must be absolute or a dev-relative path')
+    : backendUrlSchema
+
 export const uploadTicketSchema = z.object({
   assetId: uuidSchema,
-  uploadUrl: backendUrlSchema,
+  uploadUrl: uploadUrlSchema,
   headers: z.record(z.string().min(1).max(100), z.string().max(1000)),
   expiresAt: isoInstantSchema,
 })
@@ -87,13 +94,9 @@ const altState = z.discriminatedUnion('decorative', [
   z.object({ decorative: z.literal(true), alt: z.literal('') }),
 ])
 
-export const mediaAssetSchema = z
-  .object({ ...assetBase, status: mediaAssetStatusSchema })
-  .and(altState)
-  .refine((asset) => asset.status !== 'published' || asset.decorative || asset.alt !== null, {
-    message: 'A published asset needs alt text or the decorative flag',
-    path: ['alt'],
-  })
+// "Published" is derived from usage, so an in-use asset can still lack alt (seeded rows). The read schema tolerates it and
+// the UI flags it as "missing alt"; publishing is blocked server-side (NOT_PUBLISHABLE).
+export const mediaAssetSchema = z.object({ ...assetBase, status: mediaAssetStatusSchema }).and(altState)
 export type MediaAssetDto = z.infer<typeof mediaAssetSchema>
 
 /** Shorter row used inside a collection. */

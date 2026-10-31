@@ -104,13 +104,27 @@ def _event_media_dto(event: Event):
     return dto
 
 
+def _linkable(identities):
+    """Archive identities are frozen JSON, so re-check each `publicId` against the live visibility gate: a player who has
+    since hidden their profile (or been suspended) loses the link instead of pointing at a 404."""
+    from accounts.models import User
+    from registrations.dto import public_id_for
+
+    slugs = {i.get('publicId') for i in identities if i and i.get('publicId')}
+    ok = {u.public_slug for u in User.objects.filter(public_slug__in=slugs) if public_id_for(u)} if slugs else set()
+    return [None if i is None else {**i, 'publicId': i.get('publicId') if i.get('publicId') in ok else None}
+            for i in identities]
+
+
 def event_detail_dto(event: Event):
     archive = None
     if event.status == 'completed' and event.archive_published:
+        standings = event.standings or []
+        winner, *identities = _linkable([event.winner, *(row.get('identity') for row in standings)])
         archive = {
             'recap': event.recap or None,
-            'winner': event.winner,
-            'standings': event.standings,
+            'winner': winner,
+            'standings': [{**row, 'identity': identity} for row, identity in zip(standings, identities)],
             'gallery': collection_dto(event.archive_gallery) if event.archive_gallery_id else None,
             'roundsPlayed': event.rounds_played,
         }

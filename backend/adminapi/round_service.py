@@ -440,6 +440,11 @@ def generate_round(request, event_id, round_no: int, method: str | None):
             rnd.pairing_version += 1
             rnd.save(update_fields=['method', 'version', 'pairing_version', 'updated_at'])
         Pairing.objects.bulk_create(_next_board_pairings(rnd, draft, now))
+        # Auto-close registrations when round 1 is generated (the player pool is now fixed).
+        if round_no == 1 and event.status == 'registration_open':
+            if event.registration_closes_at is None or event.registration_closes_at > now:
+                event.registration_closes_at = now
+                event.save(update_fields=['registration_closes_at', 'updated_at'])
         audit.write(request, action='round.generate', object_type='round', object_id=rnd.pk, before=before,
                     after={'event': str(event.pk), 'roundNo': round_no, 'method': method, 'boards': len(draft.boards),
                            'byes': len(draft.byes), 'rematches': draft.rematches, 'source':
@@ -694,7 +699,7 @@ def parse_result(data) -> dict:
     outcome = data.get('outcome')
     if outcome not in OUTCOMES:
         raise _fail('outcome', 'Choose white, black or draw.')
-    return {'action': action, 'outcome': outcome, 'reason': parse_reason(data, required=True)}
+    return {'action': action, 'outcome': outcome, 'reason': parse_reason(data, required=False)}
 
 
 def record_result(request, event_id, round_id, pairing_id, parsed: dict):

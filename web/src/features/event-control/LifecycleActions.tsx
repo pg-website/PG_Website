@@ -97,6 +97,30 @@ export function LifecycleActions({ overview }: { overview: EventOverviewDto }) {
         />
       ) : null}
 
+      {caps.canCloseRegistration?.allowed === true ? (
+        <ConfirmAction
+          renderTrigger={(open) => (
+            <Button variant="secondary" onClick={open}>Close registrations</Button>
+          )}
+          title="Close registrations?"
+          consequence="Players will no longer be able to register. This takes effect immediately."
+          confirmLabel="Close registrations"
+          actionLabel="close registrations for this event"
+          onConfirm={async () => {
+            try {
+              await api.events.closeRegistrations(id)
+            } catch (error) {
+              await refresh()
+              throw error
+            }
+          }}
+          onDone={() => {
+            void refresh()
+            toast.success('Registrations closed')
+          }}
+        />
+      ) : null}
+
       {caps.canComplete.allowed ? <CompleteAction eventId={id} onDone={refresh} /> : null}
       {caps.canCancel.allowed ? <CancelAction eventId={id} onDone={refresh} /> : null}
     </div>

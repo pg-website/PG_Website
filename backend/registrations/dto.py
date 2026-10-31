@@ -1,7 +1,10 @@
 """Response projections (camelCase inside `data`). Everything here is built from the caller's OWN rows, or from the
 public identity subset of other players (name/rating/city per their visibility flags). No email, phone, birthday,
-handle, user id or provider id is ever emitted (NCT-L1, NCT-L2)."""
+handle, user id or provider id is ever emitted (NCT-L1, NCT-L2). The one deliberate exception is the opaque
+`publicId` (User.public_slug, PLAN-007): a random slug, never the pk, emitted only when `public_id_for` allows it."""
 from __future__ import annotations
+
+from django.utils import timezone
 
 from accounts.models import Rating, User
 from core.responses import iso
@@ -39,6 +42,28 @@ def current_ratings(user_ids, pool: str) -> dict:
     return out
 
 
+MINOR_AGE = 18
+
+
+def is_minor(user: User, today=None) -> bool:
+    """Derived from `birthday` only. No guardian-consent field exists yet, so a minor is treated as without consent
+    (F-15). An unknown birthday is not a minor."""
+    born = user.birthday
+    if born is None:
+        return False
+    today = today or timezone.localdate()
+    age = today.year - born.year - ((today.month, today.day) < (born.month, born.day))
+    return age < MINOR_AGE
+
+
+def public_id_for(user: User) -> str | None:
+    """The single visibility gate for the public player profile: the slug, or None when the player must not be
+    linkable (hidden display name, suspended, minor without consent, or no slug yet)."""
+    if not user.public_slug or not user.show_display_name or user.status != 'active' or is_minor(user):
+        return None
+    return user.public_slug
+
+
 def identity_dto(user: User, pool: str, rating_row: Rating | None) -> dict:
     """PublicIdentity: the visibility toggles are applied HERE, before anything is sent."""
     shown = user.show_display_name
@@ -50,6 +75,7 @@ def identity_dto(user: User, pool: str, rating_row: Rating | None) -> dict:
         'initials': initials_of(user.name) if shown else HIDDEN_INITIALS,
         'rating': rating,
         'cityChapter': user.city if (user.show_city_chapter and user.city) else None,
+        'publicId': public_id_for(user),
     }
 
 
@@ -65,7 +91,8 @@ class IdentityBook:
     def get(self, user_id) -> dict:
         user = self.users.get(user_id)
         if user is None:  # should not happen (FK PROTECT); never fabricate a real identity
-            return {'displayName': HIDDEN_NAME, 'initials': HIDDEN_INITIALS, 'rating': None, 'cityChapter': None}
+            return {'displayName': HIDDEN_NAME, 'initials': HIDDEN_INITIALS, 'rating': None, 'cityChapter': None,
+                    'publicId': None}
         return identity_dto(user, self.pool, self.ratings.get(user_id))
 
     def name_key(self, user_id) -> str:

@@ -1,3 +1,4 @@
+import { PlayerCard } from '@/components/player/PlayerCard'
 import { Shell } from '@/components/layout/Shell'
 import type { EventCardDto, EventDetailDto } from '@/lib/api/types/event'
 import { formatEventDate } from '@/lib/format/date'
@@ -40,7 +41,7 @@ export function EventArchiveView({ event, next }: EventArchiveViewProps) {
         { label: 'Players', value: standings.length > 0 ? String(standings.length) : NO_VALUE },
         { label: 'Rounds', value: archive !== null && archive.roundsPlayed > 0 ? String(archive.roundsPlayed) : NO_VALUE },
         { label: 'Format', value: hasText(event.format) ? event.format : NO_VALUE },
-        { label: 'Winner', value: archive?.winner?.displayName ?? NO_VALUE },
+        { label: 'Winner', value: archive?.winner ? <PlayerCard identity={archive.winner} variant="compact" /> : NO_VALUE },
       ]
 
   return (
