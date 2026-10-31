@@ -1,6 +1,9 @@
 # Railway / Nixpacks build configuration for the Django backend.
-# Nixpacks reads .python-version for the interpreter; this file pins the install
-# and release phases so Railway does not guess.
+# Explicitly declaring the python provider ensures `python` and `pip` are on
+# PATH both during the build and in interactive shell sessions.
+
+[phases.setup]
+nixPkgs = ["python314", "python314Packages.pip"]
 
 [phases.install]
 cmds = ["pip install -r requirements.txt"]
