@@ -11,7 +11,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 ## Phase 0: Gates and housekeeping
 
 ### TASK-001 FEAT-001 requirements: frontend rewrite scope
-- **Owner:** product-manager | **Est:** M | **Risk:** medium | **Status:** ready
+- **Owner:** product-manager | **Est:** M | **Risk:** medium | **Status:** complete
 - **Goal:** `docs/requirements/FEAT-001-frontend-rewrite.md` (template `templates/requirement.md`) with scope, personas, the 58 screens/states mapped to routes, mobile/a11y/SEO/performance requirements, out-of-scope list, and decisions already taken. Uses FEAT-000 (`docs/requirements/FEAT-000-feature-inventory.md`) as an input; FEAT-000 is a precursor to FEAT-001, not a replacement.
 - **Dependencies:** none (consumes FEAT-000 when it lands)
 - **Files:** `docs/requirements/FEAT-001-frontend-rewrite.md`
@@ -20,7 +20,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** schema validation
 
 ### TASK-002 ARCH-001 web frontend architecture (Next.js, RBP conventions)
-- **Owner:** architect | **Est:** L | **Risk:** high | **Status:** pending
+- **Owner:** architect | **Est:** L | **Risk:** high | **Status:** complete
 - **Goal:** `docs/architecture/ARCH-001.md` covering: Next.js version and App Router layout with route groups; rendering strategy per route (static/ISR vs client-rendered); server/client component boundary rules; data fetching (server fetch with tags for public, TanStack Query for client areas); API client, envelope, error-code copy map; query-key scheme; mock strategy usable in server rendering; Tailwind v4 token strategy; next/font and next/image; auth token handling (Q2 decided); event-room polling; forms; dialogs; a11y and test strategy; performance budget; feature flags (`NEXT_PUBLIC_*`); CSP; SEO and structured data; slug rules; no Server Actions unless justified.
 - **Rationale:** Golden rule: no implementation without approved architecture. **Adopts RBP as the governing React standard and records, for Next.js, which rule categories apply (see plan section 2).**
 - **Dependencies:** TASK-001
@@ -30,7 +30,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** schema validation
 
 ### TASK-003 Web-frontend rule, skill and agent guidance (references RBP)
-- **Owner:** architect | **Est:** S | **Risk:** medium | **Status:** pending
+- **Owner:** architect | **Est:** S | **Risk:** medium | **Status:** complete
 - **Goal:** New `.claude/rules/40-frontend-web.mdc` (globs `web/**`), web skill, frontend-engineer agent update, `00-team.mdc` roster line, `30-planning.mdc` (path and `owner`). **The web rule and skill must name RBP as the governing standard, state that for this Next.js app `server-*` and Next rules apply, and encode DoD-S/G/R.**
 - **Rationale:** Blocker B2: existing guidance steers engineers to Expo/StyleSheet/`frontend/screens/`.
 - **Dependencies:** TASK-002
@@ -39,7 +39,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** manual review
 
 ### TASK-004 Backend contract and gap matrix (what the new backend must satisfy)
-- **Owner:** architect | **Est:** M | **Risk:** medium | **Status:** pending
+- **Owner:** architect | **Est:** M | **Risk:** medium | **Status:** complete
 - **Goal:** `docs/architecture/ARCH-001-backend-contract.md`: for each of the 58 screens, the data and mutations the screen needs, expressed as the `PgApi` methods and their payloads, with a status column derived from FEAT-000 and from the old Django code (kept only as reference for field semantics, not as a target). Includes cross-cutting requirements: unified envelope, error codes, `slug` on events and stories (unique, immutable once published; UUID stays the internal id), revalidation webhook (TASK-113), idempotency keys, availability endpoint, event-room snapshot, token model.
 - **Rationale:** Reframes the former gap matrix as the contract the new backend must satisfy; becomes the handoff to a separate backend PLAN.
 - **Dependencies:** TASK-001
@@ -49,21 +49,21 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** manual review
 
 ### TASK-005 Asset inventory: fonts, imagery, brand mark
-- **Owner:** product-manager | **Est:** S | **Risk:** medium | **Status:** ready
+- **Owner:** product-manager | **Est:** S | **Risk:** medium | **Status:** complete
 - **Goal:** `docs/designs/asset-inventory.md`: font sources and licences (build-time self-hosting through `next/font`, Google or local files), every reference image URL with slot, widths and ship/replace/placeholder decision, logo availability, **image host/CDN for `next/image` `remotePatterns`: decided in v3 (Q16) as Supabase Storage; record the bucket host and any local-image fallbacks**, no hot-linking in production.
 - **Dependencies:** none
 - **Acceptance:** [ ] each font has source, licence, file plan [ ] each image has a status [ ] hot-linking and image host decisions recorded
 - **Tests:** manual review
 
 ### TASK-006 Security design review of ARCH-001
-- **Owner:** security-reviewer | **Est:** S | **Risk:** medium | **Status:** pending
+- **Owner:** security-reviewer | **Est:** S | **Risk:** medium | **Status:** complete
 - **Goal:** `docs/reviews/SEC-ARCH-001.md` (template `templates/security-review.md`): token handling (short-lived access token in memory, refresh token in versioned storage, confirm acceptable under Q2), CSP including Next inline script/nonce needs and Razorpay, revalidation webhook authentication and replay protection, guards are UX only, CMS content rendering and JSON-LD escaping, mock-mode safety in production builds, server/client secret separation (`REVALIDATE_SECRET`, `API_INTERNAL_URL`), dependency policy.
 - **Dependencies:** TASK-002
 - **Acceptance:** [ ] validates against the security-review schema [ ] no critical/high finding without agreed mitigation in ARCH-001
 - **Tests:** schema validation
 
 ### TASK-113 ISR and revalidation strategy and webhook contract
-- **Owner:** architect | **Est:** M | **Risk:** high | **Status:** pending
+- **Owner:** architect | **Est:** M | **Risk:** high | **Status:** complete
 - **Goal:** `docs/architecture/ARCH-001-isr-revalidation.md`: which public routes are static, ISR or on-demand; cache tags (`events`, `event:{slug}`, `past-events`, `site:home`, `site:nav`, `stories`, `story:{slug}`, `testimonials`, `legal:{page}`); time-based safety-net `revalidate`; `generateStaticParams` (upcoming plus latest 50 completed) with `dynamicParams` for the rest; the **webhook contract the new backend must call when an admin publishes**: `POST /api/revalidate`, HMAC-SHA256 signature over the raw body in `X-PG-Signature`, timestamp header with a 5 minute replay window, body `{type, action, id, slug?, occurredAt, version}` where type is event, story, testimonial, site, media or legal and action is published, updated, unpublished, deleted, cancelled or completed; idempotent, 202 response; mapping from each (type, action) to tags and paths; how volatile data (availability, registration state) is **not** baked into HTML: a client island fetches live availability, the prerendered HTML shows last-known text with reserved space.
 - **Rationale:** Prerendering is mandatory (Q7); staleness rules must be explicit before any public page is built.
 - **Dependencies:** TASK-002, TASK-004
@@ -73,7 +73,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** manual review
 
 ### TASK-115 Hosting and runtime note: Vercel (sin1) + Railway (Singapore) + Supabase (Singapore)
-- **Owner:** architect | **Est:** S | **Risk:** medium | **Status:** pending (was blocked on Q15; unblocked in v3)
+- **Owner:** architect | **Est:** S | **Risk:** medium | **Status:** complete
 - **Goal:** `docs/architecture/ARCH-001-hosting.md` documenting the owner-confirmed hosting topology (Q15 and Q16 resolved) so that ARCH-001, TASK-105 and the backend plan share one source:
   - **Frontend:** Next.js on Vercel. The Pro plan is needed for commercial use. Vercel functions are pinned to Singapore (`sin1`) (`vercel.json` or project region setting). Note the ISR persistence, on-demand revalidation and `next/image` optimiser behaviour on Vercel.
   - **Backend:** Railway, Southeast Asia (Singapore) region: an API service, a worker and a scheduler/cron service (hold expiry, reminders, rating processing, emails). Services share one repo or image per ARCH-001/backend plan; this note only fixes regions, service roles and networking.
@@ -98,7 +98,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** manual review
 
 ### TASK-117 Database region move runbook (Seoul to Singapore) and Supabase lockdown checklist
-- **Owner:** architect | **Est:** S | **Risk:** medium | **Status:** ready
+- **Owner:** architect | **Est:** S | **Risk:** medium | **Status:** complete
 - **Goal:** `docs/architecture/ARCH-001-db-region-move.md`, a runbook the **owner executes** (the owner performs the move):
   1. **Move steps:** create the new Singapore (ap-southeast-1) Supabase project (paid plan); decide the freeze or low-traffic window; dump the current ap-northeast-2 (Seoul) database (`pg_dump`, plus Storage objects if any) and restore into the new project; recreate roles/extensions the app needs; update connection strings to the pooler (transaction mode) in Railway production and the staging environment; point the backend at the new project; verify.
   2. **Reconciliation:** row counts per table, money totals (payments, orders), latest-id spot checks, and a login/registration/payment smoke test against the new database.
@@ -281,7 +281,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** snapshot test of the export; schema validity test
 
 ### TASK-023 Auth context, token store and session bootstrap
-- **Owner:** frontend-engineer | **Est:** M | **Risk:** high | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** M | **Risk:** high | **Status:** complete
 - **Goal:** Client `AuthProvider` mounted in `(auth)`, `(app)`, `(admin)` layouts (not `(public)`): user, role, status loading/signedOut/signedIn, signIn/signUp/signOut/refreshUser; short-lived access token in memory and refresh token in versioned storage (Q2); bootstrap via `me`; cross-tab sign-out; mock role switching through the same provider.
 - **Dependencies:** TASK-014, TASK-015, TASK-021
 - **Files:** `web/src/features/auth/AuthContext.tsx`, `useAuth.ts`, `web/src/lib/api/browser/tokens.ts`
