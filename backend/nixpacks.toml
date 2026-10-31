@@ -1,11 +1,12 @@
 # Railway / Nixpacks build configuration for the Django backend.
-# Railway uses mise + a .venv; activate the venv for all runtime commands.
+# Railway uses mise + a .venv; all runtime commands use .venv/bin/ explicitly.
 
 [phases.install]
 cmds = ["pip install -r requirements.txt"]
 
 [start]
-# The `web` process. Railway overrides this per-service:
+# Run migrations automatically on every deploy, then start gunicorn.
+# Railway overrides this per-service:
 #   worker    → .venv/bin/python manage.py run_worker
 #   scheduler → .venv/bin/python manage.py run_scheduler
-cmd = ".venv/bin/gunicorn pgchess.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120"
+cmd = ".venv/bin/python manage.py migrate --no-input && .venv/bin/gunicorn pgchess.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120"
