@@ -6,9 +6,10 @@ import { isValidPublicId } from '@/lib/routes/params'
 import { playerProfileHref } from '@/lib/routes/routes'
 import { buildMetadata } from '@/lib/seo/metadata'
 
-// Public player profile (PLAN-007): ISR on demand, 60 s window, always noindex. The id is validated and notFound() called
-// before any fetch (M13). Unknown, hidden and suspended players are all the same 404 (existence is not leaked).
-export const revalidate = 60
+// Public player profile (PLAN-007): ISR on demand, 900 s window (ARCH-001 7.3), always noindex. The id is validated
+// and notFound() called before any fetch (M13). Unknown, hidden and suspended players are all the same 404
+// (existence is not leaked).
+export const revalidate = 900
 export const dynamicParams = true
 
 interface PlayerPageProps {
