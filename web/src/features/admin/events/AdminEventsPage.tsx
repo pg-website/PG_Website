@@ -29,27 +29,31 @@ import { adminEventsQuery } from '@/lib/query/query-options/admin'
 
 const eventHref = (id: string, suffix = ''): Route => `/admin/events/${encodeURIComponent(id)}${suffix}` as Route
 
+/** A draft can have no title yet; the list shows a placeholder instead of a blank cell. */
+const rowTitle = (row: AdminEventRowDto): string => (row.title.trim() === '' ? 'Untitled draft' : row.title)
+
 function RowActions({ row }: { row: AdminEventRowDto }) {
   const api = useApi().admin
   const queryClient = useQueryClient()
   const toast = useToast()
+  const title = rowTitle(row)
 
   return (
     <div className="flex flex-wrap gap-2">
       {row.capabilities.canEdit.allowed ? (
         <Button href={eventHref(row.id, '/edit')} variant="secondary" size="sm">
-          Edit<span className="sr-only"> {row.title}</span>
+          Edit<span className="sr-only"> {title}</span>
         </Button>
       ) : null}
       {row.capabilities.canDelete?.allowed === true ? (
         <ConfirmAction
           renderTrigger={(open) => (
             <Button variant="secondary" size="sm" onClick={open}>
-              Delete<span className="sr-only"> {row.title}</span>
+              Delete<span className="sr-only"> {title}</span>
             </Button>
           )}
           title="Delete this draft?"
-          consequence={`"${row.title}" will be permanently deleted. This cannot be undone.`}
+          consequence={`"${title}" will be permanently deleted. This cannot be undone.`}
           confirmLabel="Delete event"
           actionLabel="delete this event"
           onConfirm={async () => {
@@ -109,11 +113,11 @@ const COLUMNS: readonly TableColumn<AdminEventRowDto>[] = [
       const subtitle = [row.area, row.city].filter(Boolean).join(', ')
       return subtitle ? (
         <span className="grid gap-0.5">
-          <span>{row.title}</span>
+          <span>{rowTitle(row)}</span>
           <span className="text-sm text-muted">{subtitle}</span>
         </span>
       ) : (
-        row.title
+        rowTitle(row)
       )
     },
   },

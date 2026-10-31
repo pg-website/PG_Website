@@ -6,7 +6,6 @@ import {
   currencySchema,
   isoInstantSchema,
   paiseSchema,
-  plainText,
   slugSchema,
   uuidSchema,
   versionSchema,
@@ -35,7 +34,8 @@ export type AdminEventCapabilities = z.infer<typeof adminEventCapabilitiesSchema
 
 export const adminEventRowSchema = z.object({
   id: uuidSchema,
-  title: plainText(120),
+  /** Empty for a draft whose title was never filled in (the builder creates drafts with no title). */
+  title: z.string().max(120),
   /** Null for a draft that has never been published and has no slug yet. */
   slug: slugSchema.nullable(),
   type: eventTypeSchema,
