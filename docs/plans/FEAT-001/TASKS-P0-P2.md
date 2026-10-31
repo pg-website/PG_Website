@@ -116,34 +116,35 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 
 ### TASK-124 GATE: ARCH-001 v2 scaffold conditions absorbed
 - **Owner:** architect | **Est:** S | **Risk:** medium | **Status:** complete
+- ✅ SEC-001 conditions folded into ARCH-001
 - **Goal:** Fold SEC-001 scaffold conditions (before TASK-007) into ARCH-001 v2 addendum or amended sections. Absorb: (1) default-deny CSP baseline, mutually exclusive path patterns, one-header-per-route crawl test (F-05); (2) revalidation spec: event id inside HMAC, strict format, equal-length compare, streaming cap, 202 on duplicate, slug regex, key rotation runbook (F-07, F-08); (3) allow-list mock guard, no promote-from-preview (F-09); (4) lint and schema rules: tokens ban from `(public)`, wider sinks, URL-scheme refinement, focal clamp (F-04, F-14).
 - **Dependencies:** TASK-006 (SEC-001 complete)
 - **Acceptance:** [ ] ARCH-001 v2 or addendum records these changes [ ] TASK-007 and dependents have TASK-124 as a blocking dependency
 - **Tests:** manual review
 
 ### TASK-125 Dual-mode token module (localStorage for mock, httpOnly cookie for launch)
-- **Owner:** frontend-engineer | **Est:** M | **Risk:** high | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** M | **Risk:** high | **Status:** complete
 - **Goal:** `browser/tokens.ts` supporting both modes behind `NEXT_PUBLIC_USE_MOCKS` switch: (1) mock mode stores refresh token in localStorage (pg:auth:v1) and access token in memory; (2) launch mode stores refresh token in httpOnly Secure SameSite=Strict cookie (Path=/api/auth) and access token in memory, with CSRF-header refresh. Includes step-up re-authentication flow scaffolding for refund, role change and export actions. Verifies deterministic access token expiry and rotation behaviour. OD-01 decision: ACCEPTED for mock-backed build; REQUIRED for launch.
 - **Dependencies:** TASK-007, TASK-124
 - **Acceptance:** [ ] both modes work (verified in tests) [ ] /api/auth endpoint exists with cookie-set logic [ ] CSRF header on refresh request [ ] step-up re-auth hooks scaffolded but not yet wired to screens [ ] no admin refresh token in localStorage [ ] admin session cap at 12h (if mock mode allows admin token)
 - **Tests:** unit tests for token refresh in both modes; integration test of /api/auth
 
 ### TASK-126 Vercel Firewall rate limits and Deployment Protection ops checklist
-- **Owner:** architect | **Est:** S | **Risk:** medium | **Status:** pending
+- **Owner:** architect | **Est:** S | **Risk:** medium | **Status:** complete
 - **Goal:** Document (not execute): `docs/architecture/OPS-001-vercel-firewall-and-protection.md` recording Vercel Firewall rules for rate-limiting `/api/csp-report` and `/api/revalidate`, and Deployment Protection constraints for preview deployments. Deliverable lists rules to configure and key settings (e.g., request-per-minute thresholds per SEC-001 F-11, Deployment Protection bypass rules for staging).
 - **Dependencies:** TASK-124
 - **Acceptance:** [ ] checklist includes /api/csp-report rate limits [ ] /api/revalidate rate limits (per SEC-001 OD-06) [ ] Deployment Protection on preview deployments [ ] threshold values and timing rationale explained [ ] TASK-105 will execute these
 - **Tests:** manual review
 
 ### TASK-127 Privacy purge runbook and webhook types
-- **Owner:** architect | **Est:** S | **Risk:** medium | **Status:** pending
+- **Owner:** architect | **Est:** S | **Risk:** medium | **Status:** complete
 - **Goal:** (1) Update ARCH-001-backend-contract.md section 9.4 to add webhook types for player and result changes (privacy opt-out, takedown, profile privacy changes, result withdrawal); (2) new ops doc `ARCH-001-privacy-purge-runbook.md` for emergency image and data purge (F-15: ISR may serve old page if regeneration fails; 31-day image cache; minors initials-only rule). Includes Supabase Storage version-key strategy and ISR invalidation procedure.
 - **Dependencies:** TASK-113
 - **Acceptance:** [ ] player and result webhook types added to contract [ ] purge runbook includes Supabase Storage version-key approach [ ] minors initials-only rule recorded [ ] emergency purge procedure stated (who, when, what happens)
 - **Tests:** manual review
 
 ### TASK-128 CI hardening: dependency gate, pinned actions, 2FA policy
-- **Owner:** architect | **Est:** M | **Risk:** medium | **Status:** pending
+- **Owner:** architect | **Est:** M | **Risk:** medium | **Status:** complete
 - **Goal:** Add to .github/workflows and CONTRIBUTING.md: (1) high/critical audit gate (fail CI if dependencies have severity >= high); (2) pinned action versions (use SHA, not tags); (3) 2FA requirement on publish; (4) env scoping (no production secrets in PR workflows); (5) supply-chain SLA in CONTRIBUTING.md (e.g. security patch response SLA). Deliverable: workflow rules in .github/workflows/POLICY.md and CONTRIBUTING.md update (F-19: supply-chain controls incomplete).
 - **Dependencies:** TASK-124
 - **Acceptance:** [ ] high/critical audit runs in CI [ ] sample workflow shows pinned SHA [ ] 2FA and env scoping rules stated [ ] SLA section added to CONTRIBUTING
@@ -152,7 +153,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 ## Phase 1: Foundation
 
 ### TASK-007 Scaffold web/ (Next.js App Router)
-- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** complete
 - **Goal:** `web/` with Next.js (version per ARCH-001), React 19, TypeScript strict (+`noUncheckedIndexedAccess`), Tailwind v4 through `@tailwindcss/postcss`, route-group skeleton `(public)`, `(auth)`, `(app)`, `(admin)`, `(handoff)` with a root layout, typed server/public env modules, `next.config.ts` (typed routes, images config, security headers hook), `@next/bundle-analyzer` behind `ANALYZE=true`, `.env.example`.
 - **Dependencies:** TASK-002, TASK-003
 - **Files:** `web/package.json`, `web/next.config.ts`, `web/postcss.config.mjs`, `web/tsconfig.json`, `web/src/app/layout.tsx`, `web/src/app/(public)/page.tsx` (stub), `web/src/lib/env.server.ts`, `web/src/lib/env.public.ts`, `web/.env.example`
@@ -161,7 +162,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** env parsing unit tests; build-guard test
 
 ### TASK-008 Lint, format, unit-test tooling and RBP lint rules
-- **Owner:** frontend-engineer | **Est:** S | **Risk:** low | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** S | **Risk:** low | **Status:** complete
 - **Goal:** ESLint (`eslint-config-next` core-web-vitals, `typescript-eslint`, `jsx-a11y`, `react-hooks`), Prettier, Vitest + jsdom, Testing Library, `vitest-axe`, `npm run check`. **RBP enforcement:** `no-restricted-imports` banning root imports of barrel-heavy packages and our own `index.ts` barrels (except documented entry points); `react-hooks/exhaustive-deps` as error; `react/no-unstable-nested-components`; hex-colour-in-class lint; **a boundary rule: `'use client'` files may not import `server-only` modules or `*.server.ts`; Server Components may not import client-only browser modules**; a check that props passed from Server to Client components are plain serialisable values.
 - **Dependencies:** TASK-007
 - **Files:** `web/eslint.config.mjs`, `.prettierrc`, `vitest.config.ts`, `src/test/setup.ts`
@@ -169,7 +170,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** lint-failure fixtures
 
 ### TASK-009 Playwright harness for mobile, responsive and prerender checks
-- **Owner:** test-engineer | **Est:** M | **Risk:** medium | **Status:** pending
+- **Owner:** test-engineer | **Est:** M | **Risk:** medium | **Status:** complete
 - **Goal:** Viewports 1440x900, 1280x800, 1024x768, 768x1024, 390x844, 320x568; Chromium and WebKit; helpers `expectNoHorizontalScroll`, `expectTouchTargets(44)`, `expectNoAxeViolations(serious+)`, reduced-motion project, `mockScenario()`, request-log capture, and **`fetchRawHtml(url)` (no JavaScript) for prerender assertions**.
 - **Dependencies:** TASK-007
 - **Files:** `web/playwright.config.ts`, `web/e2e/helpers/*`, `web/e2e/smoke.spec.ts`
@@ -178,12 +179,12 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** helper self-tests
 
 ### TASK-010 Tailwind v4 theme tokens, base layer, utilities **[schema-form task file]**
-- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** complete
 - **Goal/notes/criteria:** see `docs/plans/FEAT-001/TASK-010.md`. Summary: CSS-first `@theme` from `design-tokens.json`, fonts via CSS variables from `next/font`, safe-area, control-height, `cv-auto` content-visibility utility, token check script.
 - **Dependencies:** TASK-007
 
 ### TASK-011 Self-hosted fonts with next/font and resource hints
-- **Owner:** frontend-engineer | **Est:** S | **Risk:** medium | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** S | **Risk:** medium | **Status:** complete
 - **Goal:** Newsreader, Anek Latin, Fragment Mono through `next/font` (`next/font/google` self-hosts at build with no runtime request to Google, or `next/font/local` with committed OFL files per TASK-005), Latin subsets, `display: swap`, CSS variables consumed by TASK-010, automatic size-adjusted fallbacks, `preload` only for the faces used above the fold. API origin `preconnect` where the browser calls it (with the v3 `/api/*` rewrite the browser calls the same origin, so no extra preconnect is needed for the API).
 - **Dependencies:** TASK-010, TASK-005
 - **Files:** `web/src/app/fonts.ts`, `web/src/app/layout.tsx`
@@ -191,7 +192,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** Playwright network assertion
 
 ### TASK-012 Formatters, hooks and versioned storage
-- **Owner:** frontend-engineer | **Est:** S | **Risk:** low | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** S | **Risk:** low | **Status:** complete
 - **Goal:** Server-safe pure formatters (`formatEventDate`, `formatTimeRange`, `formatInr`, `formatRatingDelta` with U+2212, `formatOrdinal`) in Asia/Kolkata; client hooks `useMediaQuery`, `useReducedMotion`, `useDocumentTitle` (client areas only), `useLiveAnnouncer`, `useOnlineStatus`; versioned try/catch storage helper.
 - **Dependencies:** TASK-007
 - **Files:** `web/src/lib/format/*` (no directive, server and client safe), `web/src/lib/hooks/*` (`'use client'`)
@@ -200,7 +201,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** unit tests
 
 ### TASK-013 App Router structure: route groups, layouts, boundaries, skip link
-- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** complete
 - **Goal:** Route table realised as Next route groups from `route-manifest.json`: `(public)` (/, /play, /events/[slug], /past-events, /community, /stories, /contact, /privacy, /terms, /refund-policy), `(auth)` (/login, /auth/callback, /reset-password, /welcome, /events/[slug]/register), `(app)` (/app, /app/events, /app/events/[id], /app/rating, /app/profile), `(admin)` (/admin and children, /admin/events/new, /admin/events/[id]/[tab]), `(handoff)`; each group has its own `layout.tsx`, `loading.tsx`, `error.tsx` and `not-found.tsx` where relevant; skip link; focus-on-navigation and title announcement for client areas; `noindex` metadata and `X-Robots-Tag` header (middleware or `proxy.ts`, per the Next version in ARCH-001) for `(auth)`, `(app)`, `(admin)`, `(handoff)`; `(handoff)` returns `notFound()` unless mocks/preview are enabled.
 - **Dependencies:** TASK-007
 - **Files:** `web/src/app/(public|auth|app|admin|handoff)/**`, `web/src/middleware.ts` or `proxy.ts`, `web/src/components/SkipLink.tsx`
@@ -209,12 +210,12 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** unit test that manifest and file routes stay in sync; Playwright header and skip-link tests; build-output assertion
 
 ### TASK-014 API client core, envelope, error map **[schema-form task file]**
-- **Owner:** frontend-engineer | **Est:** L | **Risk:** high | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** L | **Risk:** high | **Status:** complete
 - **Goal/notes/criteria:** see `docs/plans/FEAT-001/TASK-014.md`. Summary: shared envelope/error modules, a `server-only` fetch entry with cache tags, a browser client with single-flight refresh, error-copy map.
 - **Dependencies:** TASK-002, TASK-007
 
 ### TASK-015 Query layer for client areas, queryOptions and polling
-- **Owner:** frontend-engineer | **Est:** S | **Risk:** low | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** S | **Risk:** low | **Status:** complete
 - **Goal:** `QueryClientProvider` mounted only in the `(auth)`, `(app)` and `(admin)` layouts (never in `(public)`), `QueryClient` defaults (stale time by data kind, no retry on 4xx), typed key factory, `queryOptions()` factories, mutation helper invalidating the smallest set, `usePolling` (visibility-aware, backoff, offline-aware, refetch on focus).
 - **Dependencies:** TASK-014
 - **Files:** `web/src/lib/query/{provider,keys,queryOptions,mutation,polling}.ts(x)` (`'use client'` where needed)
@@ -223,7 +224,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** fake-timer polling tests; dedup test; bundle assertion
 
 ### TASK-016 Domain types, zod schemas and PgApi: public and player
-- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** complete
 - **Goal:** zod schemas/types for SiteContent, Event (reference state vocabulary, **`slug` required**, UUID `id` internal), Registration (all UI-STATES), EventRoom, RatingProfile/ledger, PlayerProfile, PublicIdentity; `PgApi` methods for screens 01 to 31 (public reads callable on the server; mutations browser-only). Discriminated unions for state machines; money as integer paise.
 - **Dependencies:** TASK-002, TASK-004, TASK-007
 - **Files:** `web/src/lib/api/types/*`, `web/src/lib/api/pg-api.ts`
@@ -232,7 +233,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** type and zod parse tests
 
 ### TASK-017 Domain types, zod schemas and PgApi: admin
-- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** complete
 - **Goal:** Types, schemas and `PgAdminApi` for CMS (draft/published/version), media (alt, focal point, mode, autoplay, interval), stories (slug), testimonials, builder draft (8 steps, slug proposal and uniqueness check), event control, players, payments, settings. Version/`updatedAt` for conflict state; settings cannot carry secrets.
 - **Dependencies:** TASK-002, TASK-004, TASK-007
 - **Files:** `web/src/lib/api/types/admin/*`, `web/src/lib/api/pg-admin-api.ts`
@@ -240,7 +241,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** type and zod parse tests
 
 ### TASK-018 Mock adapter core (server- and browser-safe) and public fixtures
-- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** complete
 - **Goal:** `PgApi` mock usable during server rendering and in the browser, selected by `NEXT_PUBLIC_USE_MOCKS`; latency simulation; deterministic seeds from the reference (Saturday Social, Beginner Circle, After Work Blitz, Monsoon Open, stories, testimonials, site content) with slugs; failure injection (`?mock=error|slow|empty`, test hooks); composition entry `getPublicApi()` / `getBrowserApi()`.
 - **Dependencies:** TASK-015, TASK-016
 - **Files:** `web/src/lib/mock/*`, `web/src/lib/api/index.ts`
@@ -249,7 +250,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** composition and schema conformance tests; concurrency isolation test
 
 ### TASK-019 Mock player fixtures and scenario switcher
-- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** complete
 - **Goal:** Role switch (signed-out/player/admin), every registration state in `docs/UI-STATES.md`, every Event Room state (6 production plus manual check-in, result awaiting confirmation, rating processing pending), rating pools (empty, provisional), dashboard with no next event. Scenario panel selectable by query param, client-only.
 - **Dependencies:** TASK-018
 - **Files:** `web/src/lib/mock/player/*`, `web/src/lib/mock/scenario.ts`, `web/src/components/dev/ScenarioPanel.tsx`
@@ -257,7 +258,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** scenario transition tests
 
 ### TASK-020 Mock admin fixtures
-- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** complete
 - **Goal:** Fixtures and in-memory (client-side) mutations for CMS, media (missing alt), stories, testimonials (incomplete, consent missing, 3 vs 4+), events in each status, builder drafts, control-room data, players, payments, settings.
 - **Dependencies:** TASK-017, TASK-018
 - **Files:** `web/src/lib/mock/admin/*`
@@ -265,7 +266,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** publish gating and conflict unit tests
 
 ### TASK-021 Mock auth, session and profile services (contract behaviour)
-- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** complete
 - **Goal:** Mock implementation of the auth part of `PgApi` that behaves like the contract: login, register (field errors), logout, me, update me, short-lived access token plus rotating refresh token simulation, password-reset request (neutral response) and confirm (expired/invalid), onboarding preferences. Repurposed from the former Django auth adapter.
 - **Dependencies:** TASK-014, TASK-016, TASK-018
 - **Files:** `web/src/lib/mock/auth/*`
@@ -273,7 +274,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** unit tests for token lifecycle and neutral responses
 
 ### TASK-022 PgApi contract export for the new backend plan
-- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** complete
 - **Goal:** Generate `docs/architecture/pgapi-contract/` from the zod schemas and mock fixtures: method list, request/response JSON Schemas, example payloads per state, error codes with copy, envelope shape, slug rules, idempotency header, revalidation webhook payload (from TASK-113). Repurposed from the former real-adapter task: the contract replaces any integration with the old Django API.
 - **Dependencies:** TASK-004, TASK-016, TASK-017, TASK-113
 - **Files:** `web/scripts/export-contract.ts`, `docs/architecture/pgapi-contract/*`
@@ -290,7 +291,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** transition tests; re-render count test
 
 ### TASK-024 Route guards and return-to intent
-- **Owner:** frontend-engineer | **Est:** M | **Risk:** high | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** M | **Risk:** high | **Status:** complete
 - **Goal:** Client `RequireAuth`, `RequireRole`, `RedirectIfAuthed` used in the `(app)`/`(admin)`/`(auth)` layouts; `returnTo` preserved through login/create/OAuth; session-expired restore; 403 renders PermissionState.
 - **Dependencies:** TASK-013, TASK-023
 - **Files:** `web/src/features/auth/guards.tsx`, `returnTo.ts`
@@ -299,7 +300,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** `returnTo` unit tests; Playwright intent preservation
 
 ### TASK-111 Public server data layer: cached fetchers, tags and request dedup
-- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** complete
 - **Goal:** Server-only functions used by `(public)` Server Components: `getSiteContent`, `getUpcomingEvents`, `getEventBySlug`, `getPastEvents`, `getStories`, `getTestimonials`, `getLegalPage`, `getSitemapEntries`. Each wraps `serverGet` (TASK-014) with the cache tags and `revalidate` safety net defined in TASK-113 and is wrapped in `React.cache` for per-request dedup.
 - **Rationale:** One place that makes public pages prerenderable, deduplicated and tag-revalidatable.
 - **Dependencies:** TASK-014, TASK-016, TASK-018
@@ -309,7 +310,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** unit tests with a counting mock; build-boundary test
 
 ### TASK-114 Revalidation endpoint and mock publish trigger
-- **Owner:** frontend-engineer | **Est:** M | **Risk:** high | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** M | **Risk:** high | **Status:** complete
 - **Goal:** Implement `POST /api/revalidate` route handler per TASK-113: verify HMAC and timestamp, validate payload with zod, map (type, action) to `revalidateTag`/`revalidatePath`, respond 202 quickly, idempotent. Add a dev/preview-only mock trigger so mock "publish" actions in the admin call it.
 - **Dependencies:** TASK-007, TASK-111, TASK-113
 - **Files:** `web/src/app/api/revalidate/route.ts`, `web/src/lib/revalidate/*`
@@ -320,7 +321,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 ## Phase 2: Design system and shells
 
 ### TASK-025 Layout and typography primitives
-- **Owner:** frontend-engineer | **Est:** M | **Risk:** low | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** M | **Risk:** low | **Status:** complete
 - **Goal:** `Shell`, `Section`, `Eyebrow`, `Heading`, `Lede`, `PageIntro`/`WorkHead`, `Surface`, `InfoRow`/`InfoStack`, `ActionRow`, `Divider`, `VisuallyHidden`.
 - **Dependencies:** TASK-010
 - **Files:** `web/src/components/ui/*` (one file per component, no barrel)
@@ -329,7 +330,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** component tests, axe
 
 ### TASK-026 Button, TextLink, Icon set, StatusBadge, Avatar
-- **Owner:** frontend-engineer | **Est:** M | **Risk:** low | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** M | **Risk:** low | **Status:** complete
 - **Goal:** `Button` (primary/secondary/copper/ghost, link or button, loading, full width, 46px public/48px admin, hover lift respecting reduced motion), `TextLink` (wraps `next/link`), per-module `Icon` set (24px viewBox), `StatusBadge` (text always present), `Avatar` (initials fallback, `next/image`).
 - **Dependencies:** TASK-010, TASK-011, TASK-025
 - **Files:** `web/src/components/ui/{Button,TextLink,StatusBadge,Avatar}.tsx`, `web/src/components/ui/icons/*.tsx`
@@ -338,7 +339,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** component tests, axe
 
 ### TASK-027 Form primitives
-- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** complete
 - **Goal:** `Field`, `Input`, `Select`, `Textarea`, `Switch`, `ChoiceCard`, `Checkbox`; react-hook-form + zod glue (`useZodForm`), error summary focusing the first invalid field, `inputMode`/`autocomplete` presets. 48px controls, 16px minimum font.
 - **Dependencies:** TASK-025, TASK-026
 - **Files:** `web/src/components/ui/form/*` (`'use client'`), `web/src/lib/forms/*`
@@ -347,7 +348,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** component tests, axe, re-render test
 
 ### TASK-028 Feedback primitives
-- **Owner:** frontend-engineer | **Est:** M | **Risk:** low | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** M | **Risk:** low | **Status:** complete
 - **Goal:** `Skeleton` variants, `EmptyState`, `ErrorState`, `PermissionState`, `Toast` + live region, `ProgressBar`, `Banner`. Copy follows `screens/58-ui-states.html`. Skeleton, EmptyState and Banner are Server Components; Toast and ErrorState with retry are client.
 - **Dependencies:** TASK-012, TASK-025, TASK-026
 - **Files:** `web/src/components/ui/feedback/*`
@@ -355,7 +356,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** component tests
 
 ### TASK-029 Dialog and Drawer/Sheet
-- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** complete
 - **Goal:** `Dialog`, `Drawer`, bottom `Sheet`: focus trap, Escape, scroll lock, focus return, inert background, safe-area, reduced motion.
 - **Dependencies:** TASK-026
 - **Files:** `web/src/components/ui/overlay/*` (`'use client'`)
@@ -364,7 +365,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** component and Playwright keyboard tests
 
 ### TASK-030 Tabs and Stepper
-- **Owner:** frontend-engineer | **Est:** M | **Risk:** low | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** M | **Risk:** low | **Status:** complete
 - **Goal:** `Tabs` (ARIA; route-linked variant uses `next/link`; local variant for filters; narrow screens use a scroll-snap strip with the active tab scrolled into view and overflow affordance), `Stepper` (vertical, compact horizontal, "Step n of 8").
 - **Dependencies:** TASK-026
 - **Files:** `web/src/components/ui/{Tabs,Stepper}.tsx`
@@ -372,7 +373,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** component tests; Playwright at 320
 
 ### TASK-031 ResponsiveTable
-- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** complete
 - **Goal:** Real `<table>` at 720px and up; below, labelled stacked rows with the same semantics; column priority decides the collapsed summary; built-in skeleton, empty and error slots. Server Component by default (static data) with an optional client variant for sorting.
 - **Dependencies:** TASK-025, TASK-026
 - **Files:** `web/src/components/ui/ResponsiveTable.tsx`
@@ -381,7 +382,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** component tests; Playwright 320/1024; axe; perf fixture
 
 ### TASK-032 ResponsiveImage and MediaFrame (next/image)
-- **Owner:** frontend-engineer | **Est:** S | **Risk:** medium | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** S | **Risk:** medium | **Status:** complete
 - **Goal:** Wrapper over `next/image`: explicit aspect-ratio container with `fill`, `sizes`, focal point as `object-position`, lazy by default, `priority` for the LCP image only, required `alt` (`decorative` explicit), `MediaFrame` (2px radius, tag overlay), `remotePatterns` per TASK-005/TASK-115 (Supabase Storage host, Q16 resolved).
 - **Dependencies:** TASK-010
 - **Files:** `web/src/components/ui/{ResponsiveImage,MediaFrame}.tsx`, `web/next.config.ts` (images)
@@ -389,7 +390,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** component tests; CLS check in TASK-099
 
 ### TASK-033 Accessible Carousel (client island, lazy)
-- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** complete
 - **Goal:** Previous/next, indicators, swipe, keyboard, visible pause/play, autoplay off by default and never under reduced motion, pause on hover/focus, polite announcements, 0 or 1 item renders as static server-rendered markup. The interactive implementation is a client component loaded with `next/dynamic` only when a collection has two or more items; the first slide is server-rendered so the LCP image and SEO content exist in HTML.
 - **Dependencies:** TASK-012, TASK-026, TASK-032
 - **Files:** `web/src/components/ui/Carousel.tsx`, `CarouselImpl.tsx` (`'use client'`)
@@ -397,7 +398,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** component tests (0/1/n, keyboard, reduced motion), axe, raw-HTML assertion
 
 ### TASK-034 Domain components
-- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** complete
 - **Goal:** `EventCard` (+skeleton), `EventFacts`, `BoardCard`, `RatingPoolCard`, `ResultRow`, `Timeline`, `MetricTile`/`ControlRoomSummary`. Server Components unless interaction demands otherwise. Only components meeting the COMPONENT-CATALOG new-component rule.
 - **Dependencies:** TASK-026, TASK-028, TASK-032
 - **Files:** `web/src/components/domain/*`
@@ -406,7 +407,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** component tests, axe, long-text fixtures
 
 ### TASK-035 Reveal-on-scroll utility
-- **Owner:** frontend-engineer | **Est:** S | **Risk:** low | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** S | **Risk:** low | **Status:** complete
 - **Goal:** One-time reveal (500 to 800 ms) using CSS with a single shared IntersectionObserver in a tiny client island; content is fully visible in the server HTML and without JS; disabled under reduced motion.
 - **Dependencies:** TASK-010, TASK-012
 - **Files:** `web/src/components/ui/Reveal.tsx` (`'use client'`)
@@ -415,7 +416,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** mocked-observer tests
 
 ### TASK-036 PublicNav and Footer with mobile menu
-- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** complete
 - **Goal:** Public header and footer (screens 01 to 12) as Server Components with `next/link` (prefetch). Mobile: compact brand and a client menu-trigger island opening a drawer; primary CTA visible without opening the menu; safe areas. An auth-aware island swaps "Log in" for "My PG/Admin" after hydration without layout shift.
 - **Dependencies:** TASK-013, TASK-023, TASK-026, TASK-029
 - **Files:** `web/src/components/layout/{PublicNav,Footer,PublicLayout,MobileMenu,AuthAwareLink}.tsx`
@@ -424,7 +425,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** component tests; Playwright keyboard and 320; raw-HTML nav assertion
 
 ### TASK-037 PlayerShell
-- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** complete
 - **Goal:** 248px sidebar at 960px+; below, compact top bar + menu drawer; contextual "Event room" shortcut when an event is live or check-in is open. Client layout in `(app)` with `RequireRole`.
 - **Dependencies:** TASK-013, TASK-023, TASK-026, TASK-029
 - **Files:** `web/src/components/layout/{PlayerShell,PlayerNav}.tsx`
@@ -432,7 +433,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Tests:** component and Playwright tests
 
 ### TASK-038 AdminShell
-- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** complete
 - **Goal:** 264px sidebar with nine items at 960px+ (navigable at 1024); below, drawer with top bar title; Events active for `/admin/events/*`. Client layout in `(admin)` with `RequireRole('admin')`.
 - **Dependencies:** TASK-013, TASK-023, TASK-026, TASK-029
 - **Files:** `web/src/components/layout/{AdminShell,AdminNav}.tsx`
@@ -442,7 +443,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 ## Phase 1.5: Follow-ups from ARCH-001 section 30 (foundation tier)
 
 ### TASK-120 Edge policy: `proxy.ts` with route-class CSP, security headers, CSP report endpoint, Report-Only rollout
-- **Owner:** frontend-engineer | **Est:** M | **Risk:** high | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** M | **Risk:** high | **Status:** complete
 - **Goal:** `web/src/lib/security/proxy.ts` (Next.js middleware) implementing `src/middleware.ts`: per-request nonce for client groups `(auth)`, `(app)`, `(admin)`, `(handoff)` with a nonce-based CSP header (`'self' 'nonce-{n}' 'strict-dynamic'` on `script-src`, nonce on `style-src`); static CSP on `(public)` paths from `next.config.ts` headers (`'self' 'unsafe-inline'` on `script-src`, no `unsafe-eval`); all routes carry `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` (geolocation, camera, microphone denied). Report-Only phase (header `Content-Security-Policy-Report-Only`) for staging/preview with violations sent to `/api/csp-report`. Playwright test verifies CSP nonce presence on a client page and hydration succeeds (no script-src blocks).
 - **Rationale:** ARCH-001 section 10 (DEC-005). CSP is a build requirement, not deferred to deployment. Section 10.3 specifies the two policies and how they are applied. AC-101 requires a nonce-based CSP on client groups and a static CSP on public pages.
 - **Dependencies:** TASK-007, TASK-013
@@ -454,7 +455,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **DoD-R:** Nonce applied consistently; CSP report hook deferred with `bundle-defer-third-party` if a provider is added later.
 
 ### TASK-121 Architecture lint: dependency-cruiser config for M3 to M6 rules, `check:build-output` script
-- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** complete
 - **Goal:** `dependency-cruiser.js` configuration file enforcing ARCH-001 module boundaries (M3 to M6 from Appendix A.3): `(public)` may not import `features/*`, `lib/query`, client overlay primitives, or mock stores; no route group imports another route group's code; server-only modules start with `import 'server-only'`; client modules start with `'use client'`; no circular dependencies. Plus a `check:build-output` npm script that parses `next build` output and asserts: every route has a rendering mode (static/ISR/dynamic), `revalidate` values are finite and >= 60, mock sentinel never appears (build would include mock code), secret env names never appear, public group routes carry `noindex`. Add fixtures proving each lint rule breaks.
 - **Rationale:** ARCH-001 section 30 F-04. Mechanical enforcement of module rules prevents drift; build-output checks catch secrets and mock leaks.
 - **Dependencies:** TASK-008
@@ -465,7 +466,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Risk:** Medium (misconfigured rules could block legitimate code or miss violations).
 
 ### TASK-122 Observability adapter and PII scrubber: `lib/observe` with error/vital/analytics hooks, web-vitals hook, `/api/csp-report` logging
-- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** M | **Risk:** medium | **Status:** complete
 - **Goal:** `web/src/lib/observe/index.ts` exporting an `Observer` interface with methods `reportError(error, ctx)`, `reportVital(v)`, and `track(event)`, plus a no-op default implementation and a console implementation for development. A tiny client component in the root layout uses `useReportWebVitals` from `next/analytics` to feed LCP, CLS, INP, TTFB, FCP into `reportVital`. PII scrubber utility `lib/observe/scrubber.ts` removes tokens, passwords, PII patterns from error messages and request bodies before sending. `/api/csp-report` route handler receives CSP violation reports and calls `Observer.reportError` with the violation details and context (area: 'csp', violation.violatedDirective). No analytics provider is configured yet (NG-12); the adapter is ready for one to be plugged in later.
 - **Rationale:** ARCH-001 section 19. Observability infrastructure is built now so error tracking and performance metrics can be sent without PII. CSP violations logged as errors provide visibility into client-side issues.
 - **Dependencies:** TASK-007, TASK-014
@@ -476,7 +477,7 @@ Narrative companion to `docs/plans/PLAN-001-frontend-rewrite.md` (version 5). Th
 - **Risk:** Medium (PII scrubber misses could leak data; observer misconfiguration could breach privacy or send sensitive data to a wrong endpoint).
 
 ### TASK-039 Handoff routes: index, design-system, UI states
-- **Owner:** frontend-engineer | **Est:** M | **Risk:** low | **Status:** pending
+- **Owner:** frontend-engineer | **Est:** M | **Risk:** low | **Status:** complete
 - **Goal:** `/handoff`, `/handoff/design-system`, `/handoff/states` replacing reference screens 57 and 58; mock/preview only (`notFound()` otherwise).
 - **Dependencies:** TASK-013, TASK-019, TASK-023, TASK-028, TASK-034
 - **Files:** `web/src/app/(handoff)/handoff/**`
