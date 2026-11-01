@@ -16,7 +16,7 @@ import { builderDraftSchema, cancelEventSchema, updateBuilderDraftSchema } from 
 import {
   mediaAssetSchema,
   updateMediaAssetSchema,
-  updateMediaCollectionSchema,
+  mediaListInputSchema,
   uploadRequestSchema,
 } from '@/lib/api/types/admin/media'
 import { adminLedgerRowSchema, refundRequestSchema } from '@/lib/api/types/admin/payments'
@@ -161,7 +161,7 @@ const draft = {
   },
   payment: { pricePaise: 29900, currency: 'INR', refundWindowHours: 24, holdMinutes: 10 },
   gameSystem: { rated: false, pairingMode: 'social_balanced', rounds: null, timeControl: '' },
-  media: { collectionId: null, mode: 'static' },
+  media: { assetIds: [], assets: [], mode: 'static', autoplay: false, intervalMs: 5000 },
   communications: {
     triggers: {
       confirmation: true,
@@ -260,16 +260,15 @@ describe('media', () => {
     expect(updateMediaAssetSchema.safeParse({ version: 1, decorative: true }).success).toBe(true)
   })
 
-  it('collection interval and item bounds', () => {
+  it('asset list interval, cap and duplicate bounds', () => {
+    expect(mediaListInputSchema.safeParse({ assetIds: [ID], autoplay: true, intervalMs: 5000 }).success).toBe(true)
+    expect(mediaListInputSchema.safeParse({ assetIds: [] }).success).toBe(true)
+    expect(mediaListInputSchema.safeParse({ assetIds: [ID], intervalMs: 500 }).success).toBe(false)
+    expect(mediaListInputSchema.safeParse({ assetIds: [ID, ID] }).success).toBe(false)
+    expect(mediaListInputSchema.safeParse({ assetIds: [ID], mode: 'carousel' }).success).toBe(false)
     expect(
-      updateMediaCollectionSchema.safeParse({ version: 1, mode: 'carousel', autoplay: true, intervalMs: 5000 }).success,
-    ).toBe(true)
-    expect(updateMediaCollectionSchema.safeParse({ version: 1, intervalMs: 500 }).success).toBe(false)
-    expect(updateMediaCollectionSchema.safeParse({ version: 1, mode: 'slideshow' }).success).toBe(false)
-    expect(
-      updateMediaCollectionSchema.safeParse({
-        version: 1,
-        items: Array.from({ length: 51 }, () => ({ assetId: ID })),
+      mediaListInputSchema.safeParse({
+        assetIds: Array.from({ length: 51 }, (_, i) => `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`),
       }).success,
     ).toBe(false)
   })
@@ -348,7 +347,7 @@ describe('stories', () => {
     publishedOn: '2026-10-20',
     readingMinutes: 3,
     featured: false,
-    collectionId: null,
+    media: { assetIds: [], assets: [], mode: 'static', autoplay: false, intervalMs: 5000 },
     status: 'published',
     version: 4,
     updatedAt: NOW,

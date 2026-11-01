@@ -38,7 +38,6 @@ const FEAT_001_PAGE_ROUTES = [
   '/admin/stories',
   '/admin/testimonials',
   '/admin/events',
-  '/admin/events/new',
   '/admin/events/[id]/[tab]',
   '/admin/players',
   '/admin/payments',
@@ -79,11 +78,15 @@ describe('route registry', () => {
     // Additions beyond the manifest: story detail (row 59, OQ-01) and the Control Room routes (the manifest lists
     // only /admin/events/:id; FEAT-001 splits it into tabs and an edit entry).
     const additions = new Set(['/stories/[slug]', '/players/[publicId]', '/admin/events/[id]/[tab]', '/admin/events/[id]/edit'])
+    // Removals: /admin/events/new was replaced by CreateDraftButton (create the draft, then open /edit); the manifest
+    // still lists it.
+    const removals = new Set(['/admin/events/new'])
     for (const group of ROUTE_GROUPS) {
       const registry = routesInGroup(group)
         .map((route) => route.pattern)
         .filter((pattern) => !additions.has(pattern))
-      expect(registry.toSorted(), group).toEqual(manifest[groupKey[group]].map(toNext).toSorted())
+      const expected = manifest[groupKey[group]].map(toNext).filter((pattern) => !removals.has(pattern))
+      expect(registry.toSorted(), group).toEqual(expected.toSorted())
     }
   })
 
@@ -115,7 +118,7 @@ describe('route registry', () => {
   })
 
   it('lists the Control Room tabs once each', () => {
-    expect(new Set(ADMIN_EVENT_TABS).size).toBe(8)
+    expect(new Set(ADMIN_EVENT_TABS).size).toBe(9)
     expect(routeById('event-control').expand).toEqual({ tab: ADMIN_EVENT_TABS })
   })
 
@@ -127,7 +130,6 @@ describe('route registry', () => {
   })
 
   it('resolves concrete paths with App Router precedence', () => {
-    expect(resolveRoute('/admin/events/new')?.id).toBe('event-builder')
     expect(resolveRoute('/admin/events/abc123')?.id).toBe('event-control-index')
     expect(resolveRoute('/admin/events/abc123/pairings')?.id).toBe('event-control')
     expect(resolveRoute('/admin/events/abc123/edit')?.id).toBe('event-edit')

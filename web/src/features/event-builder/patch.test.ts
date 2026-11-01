@@ -124,7 +124,7 @@ describe('rejected fields', () => {
 
 describe('blocker to step mapping', () => {
   it('sends the new publish blockers to their steps', () => {
-    expect(parseBlockerField('media.collectionId').step).toBe('media')
+    expect(parseBlockerField('media.assetIds').step).toBe('media')
     expect(parseBlockerField('registration.closesAt').step).toBe('registration')
     expect(parseBlockerField('gameSystem.pool').step).toBe('game_system')
   })

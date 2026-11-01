@@ -43,7 +43,7 @@ function makeDraft(overrides: Partial<BuilderDraftDto> = {}): BuilderDraftDto {
     },
     payment: { pricePaise: 29900, currency: 'INR', refundWindowHours: 24, holdMinutes: 10 },
     gameSystem: { rated: false, pairingMode: 'social_balanced', rounds: null, timeControl: '' },
-    media: { collectionId: null, mode: 'static' },
+    media: { assetIds: [], assets: [], mode: 'static', autoplay: false, intervalMs: 5000 },
     communications: { triggers: {}, channels: ['email'] },
     lockedFields: [],
     lockedReasons: {},

@@ -140,7 +140,6 @@ export const ROUTES = [
   client('admin', 'admin-stories', '/admin/stories', 'Stories admin', { screens: [35] }),
   client('admin', 'admin-testimonials', '/admin/testimonials', 'Testimonials admin', { screens: [36] }),
   client('admin', 'admin-events', '/admin/events', 'Events admin', { screens: [37] }),
-  client('admin', 'event-builder', '/admin/events/new', 'Event builder', { screens: [38, 39, 40, 41, 42, 43, 44, 45] }),
   
   // Redirects to `/admin/events/[id]/overview` (outside the 59).
   client('admin', 'event-control-index', '/admin/events/[id]', 'Event control'),
@@ -149,7 +148,7 @@ export const ROUTES = [
     expand: { tab: ADMIN_EVENT_TABS },
   }),
   // Edit an existing event in the builder (default for OQ-07, outside the 59).
-  client('admin', 'event-edit', '/admin/events/[id]/edit', 'Edit event'),
+  client('admin', 'event-edit', '/admin/events/[id]/edit', 'Edit event', { screens: [38, 39, 40, 41, 42, 43, 44, 45] }),
   client('admin', 'admin-players', '/admin/players', 'Players admin', { screens: [54] }),
   client('admin', 'admin-payments', '/admin/payments', 'Payments admin', { screens: [55] }),
   client('admin', 'admin-settings', '/admin/settings', 'Settings admin', { screens: [56] }),
