@@ -8,7 +8,7 @@ import { parseInstant, toIstParts } from '@/lib/format/instant'
 const pad = (n: number): string => String(n).padStart(2, '0')
 
 /** ISO instant to the `datetime-local` value on the IST wall clock. */
-function toLocalInput(iso: string | null): string {
+function toLocalInput(iso: string | number | null): string {
   const ms = iso === null ? null : parseInstant(iso)
   if (ms === null) return ''
   const p = toIstParts(ms)
@@ -24,10 +24,12 @@ interface DateTimeInputProps {
   onBlur: () => void
   name: string
   ref: Ref<HTMLInputElement>
+  /** Earliest selectable instant (ISO or epoch ms); earlier days and times are greyed out in the picker. */
+  min?: string | number | null
 }
 
 /** Native datetime-local picker on the IST wall clock; the value is an ISO instant. */
-export function DateTimeInput({ value, onChange, onBlur, name, ref }: DateTimeInputProps) {
+export function DateTimeInput({ value, onChange, onBlur, name, ref, min = null }: DateTimeInputProps) {
   const field = useFieldControl()
   return (
     <input
@@ -36,6 +38,8 @@ export function DateTimeInput({ value, onChange, onBlur, name, ref }: DateTimeIn
       name={name}
       type="datetime-local"
       value={toLocalInput(value)}
+      min={toLocalInput(min) || undefined}
+      suppressHydrationWarning
       onChange={(event) => onChange(fromLocalInput(event.target.value))}
       onBlur={onBlur}
       aria-describedby={field?.['aria-describedby']}

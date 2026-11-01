@@ -80,16 +80,12 @@ Generated 2026-10-27 from the mounted Django routes (`backend/*/urls.py`), compa
 | - | GET | `/api/admin/media/assets/{assetId}` | admin | - | - | 200 Read one media asset | - | Matches web (D4 applied) |
 | S10 | PATCH | `/api/admin/media/assets/{assetId}` | admin | - | - | 200 Update alt text, decorative flag, focal point, credit or archive state | `VERSION_CONFLICT` `ALT_MISSING` | Matches web (D4 applied) |
 | S11 | DELETE | `/api/admin/media/assets/{assetId}` | admin | - | - | 200 Delete an unreferenced asset | `ASSET_IN_USE` | Matches |
-| S12 | GET | `/api/admin/media/collections` | admin | - | - | 200 List media collections | - | Matches web except id type: integer string (D4 applied, FE task F4) |
-| S12 | POST | `/api/admin/media/collections` | admin | - | - | 201 Create a media collection | - | Matches web except id type: integer string (D4 applied, FE task F4) |
-| S12 | GET | `/api/admin/media/collections/{collectionId}` | admin | - | - | 200 Read a media collection with ordered items | - | Matches web except id type: integer string (D4 applied, FE task F4) |
-| S12 | PATCH | `/api/admin/media/collections/{collectionId}` | admin | - | - | 200 Update a media collection | `VERSION_CONFLICT` | Matches web except id type: integer string (D4 applied, FE task F4) |
 | S01 | GET | `/api/admin/cms/sections` | admin | - | - | 200 List CMS sections | - | Matches web (D5 applied) |
-| S02 | GET | `/api/admin/cms/sections/{key}` | admin | - | - | 200 Read a section (draft and published side by side) | - | Matches web (D5 applied) |
+| S02 | GET | `/api/admin/cms/sections/{key}` | admin | - | - | 200 Read a section (draft and published side by side) | - | Matches web (D5 applied). With no live copy and no draft: `status: clean`, `published: null`, `draft: null`, `version: 0`, `lastChange: null` (CMS-B1 verified, all 5 keys) |
 | S03 | PUT | `/api/admin/cms/sections/{key}/draft` | admin | - | - | 200 Save the section draft | `VERSION_CONFLICT` | Matches; `savedAt` added by BE-14 |
-| S04 | POST | `/api/admin/cms/sections/{key}/publish` | admin | required | - | 200 Publish the section draft (Idempotency-Key required) | `VERSION_CONFLICT` `IDEMPOTENCY_CONFLICT` `NOT_PUBLISHABLE` `NO_DRAFT` `NO_CHANGES` `INVALID_CONTENT` | Matches |
+| S04 | POST | `/api/admin/cms/sections/{key}/publish` | admin | required | - | 200 Publish the section draft (Idempotency-Key required) | `VERSION_CONFLICT` `IDEMPOTENCY_CONFLICT` `NOT_PUBLISHABLE` `NO_DRAFT` `NO_CHANGES` `INVALID_CONTENT` | Matches (returns status published; F5 closed) |
 | S05 | GET | `/api/admin/cms/sections/{key}/versions` | admin | - | - | 200 Publish history of a section (newest first) | - | Matches |
-| S06 | GET | `/api/admin/legal/{page}` | admin | - | - | 200 Read a legal page (draft and published side by side) | - | Matches |
+| S06 | GET | `/api/admin/legal/{page}` | admin | - | - | 200 Read a legal page (draft and published side by side) | - | Matches. Empty (no live, no draft): `status: clean`, `published: null`, `draft: null`, `version: 0` for privacy, terms, refund-policy |
 | S06 | PUT | `/api/admin/legal/{page}` | admin | - | - | 200 Save the legal page draft | `VERSION_CONFLICT` | Matches |
 | S06 | POST | `/api/admin/legal/{page}/publish` | admin | required | - | 200 Publish the legal page draft (Idempotency-Key required) | `VERSION_CONFLICT` `IDEMPOTENCY_CONFLICT` `NOT_PUBLISHABLE` | Matches |
 | S13 | GET | `/api/admin/stories` | admin | - | - | 200 List stories (without body) | - | Matches |
@@ -102,7 +98,7 @@ Generated 2026-10-27 from the mounted Django routes (`backend/*/urls.py`), compa
 | S15 | GET | `/api/admin/testimonials` | admin | - | - | 200 List testimonials | - | Matches |
 | S15 | POST | `/api/admin/testimonials` | admin | - | - | 201 Create a testimonial draft | - | Matches |
 | S15 | GET | `/api/admin/testimonials/{testimonialId}` | admin | - | - | 200 Read a testimonial | - | Matches |
-| S15 | PATCH | `/api/admin/testimonials/{testimonialId}` | admin | - | - | 200 Update a testimonial | `VERSION_CONFLICT` `NOT_PUBLISHABLE` | Matches |
+| S15 | PATCH | `/api/admin/testimonials/{testimonialId}` | admin | - | - | 200 Update a testimonial | `VERSION_CONFLICT` `NOT_PUBLISHABLE` | Matches; accepts `sortOrder` (int 0-1000), `version`, quote, name, descriptor, portraitAssetId, consent |
 | S16 | POST | `/api/admin/testimonials/{testimonialId}/publish` | admin | required | - | 200 Publish a testimonial (Idempotency-Key required) | `NOT_PUBLISHABLE` `REQUIRED` `CONSENT_REQUIRED` `ASSET_ARCHIVED` `ALREADY_PUBLISHED` | Matches |
 | S16 | POST | `/api/admin/testimonials/{testimonialId}/unpublish` | admin | - | - | 200 Unpublish a testimonial | `NOT_PUBLISHABLE` | Matches |
 | E07 | POST | `/api/admin/events/{eventId}/publish` | admin | required | - | 200 Publish a draft (Idempotency-Key required) | `SLUG_TAKEN` `NOT_PUBLISHABLE` | Matches |
@@ -122,7 +118,7 @@ Generated 2026-10-27 from the mounted Django routes (`backend/*/urls.py`), compa
 | C05 | GET | `/api/admin/events/{eventId}/check-in` | admin | - | - | 200 Host desk list (search, arrival counts, first-timer queue) | - | Matches |
 | C04 | POST | `/api/admin/events/{eventId}/check-in` | admin | - | - | 200 Host-desk check-in or undo (any time except a cancelled event) | `REGISTRATION_NOT_CONFIRMED` | Matches |
 | C13 | GET | `/api/admin/events/{eventId}/payments` | admin | - | - | 200 Payments of an event (one row per payment order) | - | Matches |
-| C16 | GET | `/api/admin/events/{eventId}/recap` | admin | - | - | 200 Recap, gallery collection and archive flag | - | Matches |
+| C16 | GET | `/api/admin/events/{eventId}/recap` | admin | - | - | 200 Recap, archive gallery images (`assetIds`) and archive flag | - | Matches |
 | C16 | PATCH | `/api/admin/events/{eventId}/recap` | admin | - | - | 200 Update the recap, gallery link or archive flag (completed events only) | `VERSION_CONFLICT` | Matches |
 | C14 | GET | `/api/admin/events/{eventId}/messages` | admin | - | - | 200 Message log with per-recipient delivery counts and channel health | - | Matches |
 | C14 | POST | `/api/admin/events/{eventId}/messages` | admin | required | - | 202 Send a message to an audience (Idempotency-Key required, 202) | `IDEMPOTENCY_CONFLICT` | Matches |
@@ -212,3 +208,15 @@ Not conforming (reported, not changed): the web `httpsUrlSchema` requires `https
 - F4: relax the media collection id from UUID to string in `mediaCollectionAdminSchema.id`, and `collectionId` in the event builder media step (and any `mediaCollectionIdSchema` use).
 - F5: S04 (CMS publish) returns `status: published`; the web `publishCmsResultSchema` literal is `clean`. Align one side (not covered by the decisions above).
 - F6: collection item cap is 50 on the backend, 24 on the web.
+
+
+## PLAN-010: media simplified to assets only (backend)
+
+- Removed: `GET/POST /api/admin/media/collections`, `GET/PATCH /api/admin/media/collections/{collectionId}` (S12). Assets endpoints (S07-S11) are unchanged; asset `usedBy[].kind` no longer includes `collection` (events, stories, testimonials, site sections only).
+- Galleries are private to one owner (event, event archive, story, site-section slot). `MediaCollection` is internal storage (`owner_kind`, `owner_ref`), never exposed. Mode is derived: 1 asset static, 2+ carousel. Cap 50 (`MAX_COLLECTION_ITEMS`). `autoplay` default false, `intervalMs` default 5000 (2000..60000).
+- Event builder `media` (E03 read, E04 PATCH): `{assetIds, assets, mode, autoplay, intervalMs}` on read; `{assetIds?, autoplay?, intervalMs?}` on write. `collectionId` and `mode` are no longer accepted. Publish blocker `media.assetIds` when any image lacks alt text and is not decorative.
+- Recap (C16): `collectionId` replaced by `assetIds` (read and PATCH), stored as the event archive private gallery.
+- Stories (S13): `collectionId` replaced by `media` (`{assetIds, autoplay?, intervalMs?}` in; `{assetIds, assets, mode, autoplay, intervalMs}` out on detail). Publish blocker `media.assetIds` for missing alt.
+- Site sections (S02/S03): each image slot is sent as `{assetIds, autoplay?, intervalMs?}`; reads return the public shape plus `assetIds` and `assets`. The `collections` array is removed from the section detail. Publish rejects a draft with an image lacking alt text. A published slot is forked on first draft edit, so the live copy is never mutated before publish.
+- Public read API output is unchanged.
+- Migrations: `content/0013_private_galleries` (schema), `content/0014_private_galleries_data` (claims each collection for its single owner and clones shared ones per owner; rewrites section `{collection: key}` references).

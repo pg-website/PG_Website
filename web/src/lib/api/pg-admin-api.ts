@@ -59,13 +59,9 @@ import type {
 } from '@/lib/api/types/admin/event-builder'
 import type { AdminEventRowDto, AdminEventsQuery } from '@/lib/api/types/admin/event-list'
 import type {
-  CreateMediaCollection,
   MediaAssetDto,
   MediaAssetsQuery,
-  MediaCollectionsQuery,
-  MediaCollectionAdminDto,
   UpdateMediaAsset,
-  UpdateMediaCollection,
   UploadRequest,
   UploadTicket,
 } from '@/lib/api/types/admin/media'
@@ -333,18 +329,6 @@ export interface PgAdminMediaApi {
   updateAsset(assetId: MediaAssetDto['id'], input: UpdateMediaAsset, opts?: AdminRequestOpts): Promise<MediaAssetDto>
   /** S11. ASSET_IN_USE when referenced: archive instead. */
   deleteAsset(assetId: MediaAssetDto['id'], opts?: AdminRequestOpts): Promise<void>
-  /** S12 */
-  listCollections(query?: MediaCollectionsQuery, opts?: AdminRequestOpts): Promise<Page<MediaCollectionAdminDto>>
-  /** S12 */
-  getCollection(id: MediaCollectionAdminDto['id'], opts?: AdminRequestOpts): Promise<MediaCollectionAdminDto>
-  /** S12 */
-  createCollection(input: CreateMediaCollection, opts?: AdminRequestOpts): Promise<MediaCollectionAdminDto>
-  /** S12 */
-  updateCollection(
-    id: MediaCollectionAdminDto['id'],
-    input: UpdateMediaCollection,
-    opts?: AdminRequestOpts,
-  ): Promise<MediaCollectionAdminDto>
 }
 
 // ---------- Stories (S13, S14, screen 35) ----------

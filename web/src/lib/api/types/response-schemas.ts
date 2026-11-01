@@ -38,7 +38,7 @@ import {
   closeRegistrationResultSchema,
 } from '@/lib/api/types/admin/event-builder'
 import { adminEventRowSchema } from '@/lib/api/types/admin/event-list'
-import { mediaAssetSchema, mediaCollectionAdminSchema, uploadTicketSchema } from '@/lib/api/types/admin/media'
+import { mediaAssetSchema, uploadTicketSchema } from '@/lib/api/types/admin/media'
 import {
   adminLedgerRowSchema,
   adminPaymentRowSchema,
@@ -213,10 +213,6 @@ export const adminMediaResponses = {
   completeUpload: mediaAssetSchema,
   listAssets: pageSchema(mediaAssetSchema),
   updateAsset: mediaAssetSchema,
-  listCollections: pageSchema(mediaCollectionAdminSchema),
-  getCollection: mediaCollectionAdminSchema,
-  createCollection: mediaCollectionAdminSchema,
-  updateCollection: mediaCollectionAdminSchema,
 } as const
 
 export const adminStoriesResponses = {

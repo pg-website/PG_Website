@@ -13,14 +13,14 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
 from content import validation as v
-from content.models import MAX_PAISE, Event, MediaCollection, MediaCollectionItem
+from content.models import MAX_PAISE, Event
 from core.errors import ValidationFailed
 from core.responses import iso
 from payments.models import PaymentOrder
 from registrations import conf as reg_conf
 from registrations.models import Registration
 
-from .media_service import parse_collection_id
+from . import media_service as ms
 
 BUILDER_STEPS = ('basics', 'experience', 'registration', 'payment', 'game_system', 'media', 'communications', 'review')
 TRIGGERS = ('confirmation', 'reminder_24h', 'checkin_open', 'pairing_published', 'post_event')
@@ -126,7 +126,7 @@ def readiness(event: Event, now=None) -> dict:
     elif event.starts_at is not None and event.ends_at <= event.starts_at:
         out.append(_b('INVALID', 'The end must be after the start.', 'basics.endsAt'))
 
-    need(event.description, 'experience.description', 'The description')
+    # The description is optional: it is never a publish blocker.
 
     # Capacity is optional: null means unlimited (owner decision), so it is never a publish blocker.
     if (event.registration_opens_at and event.registration_closes_at
@@ -135,10 +135,8 @@ def readiness(event: Event, now=None) -> dict:
     if (event.registration_closes_at and event.starts_at is not None
             and event.registration_closes_at > event.starts_at):
         out.append(_b('INVALID', 'Registration must close no later than the event starts.', 'registration.closesAt'))
-    if event.media_id and not MediaCollectionItem.objects.filter(collection_id=event.media_id).filter(
-            Q(asset__decorative=True) | ~Q(asset__alt='')).exists():
-        out.append(_b('INVALID', 'The media collection needs at least one image with alt text (or marked decorative).',
-                      'media.collectionId'))
+    if event.media_id and ms.missing_alt_in([event.media_id]):
+        out.append(_b('INVALID', 'Every image needs alt text (or must be marked decorative).', 'media.assetIds'))
 
     need(event.time_control, 'gameSystem.timeControl', 'The time control')
     if event.rated and not event.rating_pool:
@@ -207,7 +205,7 @@ def draft_dto(event: Event) -> dict:
         'payment': {'pricePaise': event.price_paise, 'currency': 'INR',
                     'refundWindowHours': event.refund_window_hours, 'holdMinutes': event.hold_minutes},
         'gameSystem': _game_system(event),
-        'media': {'collectionId': str(event.media_id) if event.media_id else None, 'mode': event.media_mode},
+        'media': ms.gallery_dto(event.media if event.media_id else None),
         'communications': {'triggers': _triggers(event), 'channels': list(CHANNELS)},
         'lockedFields': locked,
         'lockedReasons': {k: LOCK_REASONS[k] for k in locked},
@@ -549,20 +547,19 @@ def parse_patch(data) -> tuple[int, dict]:
             out['gameSystem'] = g
 
     if 'media' in data:
-        raw = _object(errs, 'media', data['media'], {'collectionId', 'mode'})
+        raw = _object(errs, 'media', data['media'], {'assetIds', 'autoplay', 'intervalMs'})
         if raw is not None:
+            parsed_media, media_errs = ms.parse_gallery(raw, 'media')
+            for path, msgs in media_errs.items():
+                for msg in msgs:
+                    errs.add(path, msg)
             m = {}
-            if 'collectionId' in raw:
-                cid = raw['collectionId']
-                if cid is None:
-                    m['collectionId'] = None
-                else:
-                    # Collection ids are integer keys (BE-07), sent as decimal strings.
-                    m['collectionId'] = parse_collection_id(cid) if isinstance(cid, str) else None
-                    if m['collectionId'] is None:
-                        errs.add('media.collectionId', 'Choose a media collection.')
-            if 'mode' in raw:
-                m['mode'] = _enum(errs, 'media.mode', raw['mode'], MEDIA_MODES)
+            if 'asset_ids' in parsed_media:
+                m['assetIds'] = [str(i) for i in parsed_media['asset_ids']]
+            if 'autoplay' in parsed_media:
+                m['autoplay'] = parsed_media['autoplay']
+            if 'interval_ms' in parsed_media:
+                m['intervalMs'] = parsed_media['interval_ms']
             out['media'] = m
 
     if 'communications' in data:
@@ -579,10 +576,6 @@ def parse_patch(data) -> tuple[int, dict]:
             out['communications'] = c
     errs.done()
     return version, out
-
-
-def media_collection_exists(collection_id) -> bool:
-    return MediaCollection.objects.filter(pk=collection_id).exists()
 
 
 def default_communications() -> dict:

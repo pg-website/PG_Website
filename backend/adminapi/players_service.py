@@ -9,8 +9,11 @@ from __future__ import annotations
 
 import uuid
 
+from datetime import timedelta
+
 from django.db import transaction
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Value
+from django.db.models.functions import Replace
 from django.utils import timezone
 
 import audit
@@ -19,6 +22,7 @@ from audit.models import AuditLog
 from content import runtime_settings
 from core.errors import NotFound, ValidationFailed
 from core.responses import iso
+from core.validation import PHONE_QUERY_RE, phone_digits
 from registrations.models import Registration
 
 from . import control_service as cs
@@ -28,6 +32,10 @@ ROLES = ('player', 'admin')
 VISIBLE_FIELDS = ['phone', 'birthday', 'area', 'chessComHandle', 'fideId']
 HISTORY_MAX = 100
 ROLE_ACTION = 'player.role_change'
+VIEW_ACTION = 'player.view_private'
+VIEW_AUDIT_WINDOW = timedelta(minutes=5)  # one private-view audit row per admin+player per window (limits refetch flood)
+MIN_PHONE_QUERY_DIGITS = 4
+NATIONAL_NUMBER_DIGITS = 10  # a "+<cc>" query also matches stored numbers kept without the country code
 
 
 def _name(user) -> str:
@@ -41,9 +49,42 @@ def _parse_id(raw) -> uuid.UUID:
         raise NotFound() from None
 
 
-def _row(u: User, attended: int) -> dict:
+def _attendance_pct(attended: int, registered: int):
+    """Whole percent of past confirmed registrations attended; None (not 0) when there is nothing to divide by."""
+    if registered <= 0:
+        return None
+    return min(100, round(100 * attended / registered))
+
+
+def _primary_rating(ratings) -> dict | None:
+    """The highest-games pool (ties: pool name); None when the player has no rating row. `provisional` lets the
+    client show "New" (OQ-4)."""
+    ratings = list(ratings)
+    if not ratings:
+        return None
+    best = max(ratings, key=lambda r: (r.games_played, r.pool))
+    return {'pool': best.pool, 'rating': best.rating, 'provisional': best.games_played < runtime_settings.provisional_games()}
+
+
+def _row(u: User, attended: int, registered: int = 0, rating: dict | None = None) -> dict:
     return {'id': str(u.pk), 'name': _name(u), 'email': u.email, 'city': u.city or None, 'role': u.role,
-            'status': u.status, 'eventsAttended': attended, 'joinedAt': iso(u.created_at)}
+            'status': u.status, 'eventsAttended': attended, 'joinedAt': iso(u.created_at),
+            'rating': rating, 'attendancePct': _attendance_pct(attended, registered)}
+
+
+def _search_filter(search: str) -> Q:
+    """Name/email match the trimmed text. A phone-looking query also matches on digits only, against the stored
+    number stripped the same way (stored phones keep their formatting), so "98765 43210", "+91 98765-43210" and
+    "9876543210" find the same player."""
+    cond = Q(name__icontains=search) | Q(email__icontains=search)
+    digits = phone_digits(search)
+    if PHONE_QUERY_RE.match(search) and len(digits) >= MIN_PHONE_QUERY_DIGITS:
+        candidates = {digits}
+        if search.startswith('+') and len(digits) > NATIONAL_NUMBER_DIGITS:
+            candidates.add(digits[-NATIONAL_NUMBER_DIGITS:])
+        for cand in candidates:
+            cond |= Q(phone_digits__contains=cand)
+    return cond
 
 
 def list_players(request, pagination_cls):
@@ -51,14 +92,22 @@ def list_players(request, pagination_cls):
     search = (q.get('q') or '').strip()
     if len(search) > 100:
         raise ValidationFailed(fields={'q': ['Use at most 100 characters.']})
-    qs = User.objects.annotate(attended=Count('event_registrations', filter=Q(
-        event_registrations__status='confirmed', event_registrations__checked_in_at__isnull=False)))
+    now = timezone.now()
+    confirmed = Q(event_registrations__status='confirmed')
+    qs = User.objects.annotate(
+        attended=Count('event_registrations', filter=confirmed & Q(event_registrations__checked_in_at__isnull=False)),
+        registered=Count('event_registrations', filter=confirmed & Q(event_registrations__event__starts_at__lt=now)),
+    )
     if search:
-        qs = qs.filter(Q(name__icontains=search) | Q(email__icontains=search) | Q(phone__icontains=search))
-    qs = qs.order_by('-created_at', 'id')
+        stored = Value('')
+        expr = Replace('phone', Value(' '), stored)
+        for ch in '()+-':
+            expr = Replace(expr, Value(ch), stored)
+        qs = qs.annotate(phone_digits=expr).filter(_search_filter(search))
+    qs = qs.order_by('-created_at', 'id').prefetch_related('ratings')  # one extra query for the whole page
     paginator = pagination_cls()
     rows = list(paginator.paginate_queryset(qs, request))
-    return paginator, [_row(u, u.attended) for u in rows]
+    return paginator, [_row(u, u.attended, u.registered, _primary_rating(u.ratings.all())) for u in rows]
 
 
 def _flag(allowed: bool, reason: str = '') -> dict:
@@ -81,24 +130,47 @@ def _version(user: User) -> int:
     return 1 + AuditLog.objects.filter(object_type='player', object_id=str(user.pk), action=ROLE_ACTION).count()
 
 
+def _audit_private_view(request, user: User) -> None:
+    """Record that this admin opened the player's private record (OQ-6). No PII in the payload: only the actor, the
+    player id and the NAMES of the field groups exposed. One row per admin+player per VIEW_AUDIT_WINDOW. Any failure
+    propagates, so the record is not returned without its audit row."""
+    with transaction.atomic():
+        since = timezone.now() - VIEW_AUDIT_WINDOW
+        if AuditLog.objects.filter(actor=request.user, action=VIEW_ACTION, object_type='player',
+                                   object_id=str(user.pk), occurred_at__gte=since).exists():
+            return
+        audit.write(request, action=VIEW_ACTION, object_type='player', object_id=user.pk,
+                    after={'fields': VISIBLE_FIELDS})
+
+
 def get_player(request, player_id) -> dict:
     pk = _parse_id(player_id)
     user = User.objects.filter(pk=pk).first()
     if user is None:
         raise NotFound()
+    _audit_private_view(request, user)  # fail closed: no audit row, no private fields
     now = timezone.now()
-    regs = list(Registration.objects.filter(user=user).select_related('event')
-                .order_by('-event__starts_at', '-created_at')[:HISTORY_MAX])
-    attended = Registration.objects.filter(user=user, status='confirmed', checked_in_at__isnull=False).count()
+    all_regs = Registration.objects.filter(user=user)
+    regs = list(all_regs.select_related('event').order_by('-event__starts_at', '-created_at')[:HISTORY_MAX])
+    confirmed = all_regs.filter(status='confirmed')
+    attended = confirmed.filter(checked_in_at__isnull=False).count()
+    registered = confirmed.filter(event__starts_at__lt=now).count()
+    next_reg = confirmed.filter(event__starts_at__gte=now).select_related('event').order_by('event__starts_at', 'id').first()
+    next_event = None if next_reg is None else {
+        'id': str(next_reg.event_id), 'slug': next_reg.event.slug, 'title': next_reg.event.title[:120],
+        'startsAt': iso(next_reg.event.starts_at)}
+    history_total = all_regs.count()
     history = [{'registrationId': str(r.pk), 'eventId': str(r.event_id), 'eventSlug': r.event.slug,
                 'eventTitle': r.event.title[:120], 'startsAt': iso(r.event.starts_at),
                 'status': cs._web_status(r, now), 'attended': r.checked_in_at is not None}
                for r in regs if r.event.starts_at is not None]
     threshold = runtime_settings.provisional_games()
-    ratings = [{'pool': r.pool, 'rating': r.rating, 'games': r.games_played,
-                'provisional': r.games_played < threshold}
-               for r in Rating.objects.filter(user=user).order_by('pool')]
-    return {**_row(user, attended), 'phone': user.phone or None,
+    rating_rows = list(Rating.objects.filter(user=user).order_by('pool'))
+    ratings = [{'pool': r.pool, 'rating': r.rating, 'rd': r.rd, 'games': r.games_played,
+                'provisional': r.games_played < threshold} for r in rating_rows]
+    return {**_row(user, attended, registered, _primary_rating(rating_rows)),
+            'registered': registered, 'nextEvent': next_event, 'historyTruncated': history_total > HISTORY_MAX,
+            'phone': user.phone or None,
             'birthday': user.birthday.isoformat() if user.birthday else None, 'area': user.area or None,
             'chessComHandle': user.chess_com_handle or None, 'fideId': user.fide_id or None,
             'visibleFields': VISIBLE_FIELDS, 'history': history, 'ratings': ratings,

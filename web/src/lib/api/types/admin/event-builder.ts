@@ -3,13 +3,12 @@ import { draftText, lastChangeSchema, publishReadinessSchema, writeVersionSchema
 import { slugFieldSchema } from '@/lib/api/types/admin/slug'
 import { eventAudienceSchema, eventStatusSchema, eventTypeSchema, pairingModeSchema } from '@/lib/api/types/event-state'
 import { ratingPoolSchema } from '@/lib/api/types/identity'
-import { mediaModeSchema } from '@/lib/api/types/media'
+import { adminMediaListSchema, mediaListInputSchema } from '@/lib/api/types/admin/media'
 import {
   authoringSlugSchema,
   currencySchema,
   isoInstantSchema,
   paiseSchema,
-  mediaCollectionIdSchema,
   uuidSchema,
   versionSchema,
 } from '@/lib/api/types/primitives'
@@ -141,11 +140,8 @@ export const gameSystemStepSchema = z.discriminatedUnion('rated', [
 ])
 export type GameSystemStep = z.infer<typeof gameSystemStepSchema>
 
-export const mediaStepSchema = z.object({
-  /** Event media collection (S12). Null until chosen; 0 assets renders the placeholder. */
-  collectionId: mediaCollectionIdSchema.nullable(),
-  mode: mediaModeSchema,
-})
+/** Event images: ordered `assetIds` (+ read-only `assets` and derived `mode`). 0 assets renders the placeholder. */
+export const mediaStepSchema = adminMediaListSchema
 export type MediaStep = z.infer<typeof mediaStepSchema>
 
 /** Per-event toggles for state-triggered messages (C15); also part of the builder resource (E03/E04). */
@@ -244,7 +240,7 @@ export const updateBuilderDraftSchema = z.strictObject({
   registration: partialStep(registrationStepSchema).optional(),
   payment: partialStep(paymentStepSchema.omit({ currency: true })).optional(),
   gameSystem: gameSystemPatchSchema.optional(),
-  media: partialStep(mediaStepSchema).optional(),
+  media: mediaListInputSchema.optional(),
   communications: partialStep(communicationsStepSchema).optional(),
 })
 export type UpdateBuilderDraftInput = z.infer<typeof updateBuilderDraftSchema>

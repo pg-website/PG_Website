@@ -19,16 +19,16 @@ from django.utils import timezone
 
 import audit
 from content import validation as v
-from content.models import MediaAsset, MediaCollection, Story, Testimonial
+from content.models import MediaAsset, Story, Testimonial
 from core.errors import NotFound, NotPublishable, SlugLocked, SlugTaken, ValidationFailed, VersionConflict
 from core.responses import iso
 
 from . import media_service as ms
 from .cms_service import _model_errors, _size_check, _who, last_changes, resolve_image_blocks
 
-# `coverAssetId` and `consentAt` are the legacy forms; the web sends `collectionId` and `consent`.
+# `coverAssetId` and `consentAt` are the legacy forms; the web sends `media` (assetIds) and `consent`.
 STORY_FIELDS = {'version', 'slug', 'kind', 'eyebrow', 'title', 'dek', 'publishedOn', 'readingMinutes', 'featured',
-                'coverAssetId', 'collectionId', 'body'}
+                'coverAssetId', 'media', 'body'}
 TESTIMONIAL_FIELDS = {'version', 'quote', 'name', 'descriptor', 'portraitAssetId', 'consent', 'consentAt', 'sortOrder'}
 
 
@@ -73,11 +73,11 @@ def story_dto(s: Story, *, full=True) -> dict:
         'version': s.version, 'updatedAt': iso(s.updated_at),
     }
     if full:
-        # Web `adminStorySchema`: `slug` is the lock union, `collectionId` the story media collection (integer key as a
-        # decimal string), `lastChange` comes from the audit trail.
+        # Web `adminStorySchema`: `slug` is the lock union, `media` the story's private gallery (PLAN-010: assetIds plus
+        # asset summaries), `lastChange` comes from the audit trail.
         dto['slug'] = ({'lock': 'locked', 'value': s.slug, 'lockedAt': iso(s.first_published_at)}
                        if s.first_published_at is not None else {'lock': 'editable', 'value': s.slug})
-        dto['collectionId'] = str(s.collection_id) if s.collection_id else None
+        dto['media'] = ms.gallery_dto(s.collection if s.collection_id else None)
         dto['lastChange'] = last_changes('story', [s.pk]).get(s.pk)
         dto['body'] = s.body
     return dto
@@ -160,16 +160,14 @@ def _parse_story(data, *, creating: bool):
     _flag(errors, data, 'featured', out, 'featured')
     if 'coverAssetId' in data:
         out['cover_id'] = _asset_ref(errors, 'coverAssetId', data['coverAssetId'])
-    if 'collectionId' in data:
-        raw = data['collectionId']
-        if raw is None:
-            out['collection_id'] = None
+    if 'media' in data:
+        raw = data['media']
+        if not isinstance(raw, dict) or set(raw) - ms.GALLERY_INPUT_KEYS:
+            errors['media'] = ['Send {"assetIds": [...], "autoplay"?, "intervalMs"?}.']
         else:
-            cid = ms.parse_collection_id(raw) if isinstance(raw, str) else None
-            if cid is None or not MediaCollection.objects.filter(pk=cid).exists():
-                errors['collectionId'] = ['This media collection does not exist.']
-            else:
-                out['collection_id'] = cid
+            gallery, gallery_errors = ms.parse_gallery(raw, 'media')
+            errors.update(gallery_errors)
+            out['_gallery'] = gallery
     if 'body' in data:
         try:
             body = resolve_image_blocks(data['body'], 'body')
@@ -215,11 +213,14 @@ def create_story(request, parsed: dict) -> Story:
     story = Story(slug=parsed['slug'], kind=parsed['kind'], title=parsed['title'], eyebrow=parsed.get('eyebrow', ''),
                   dek=parsed.get('dek', ''), published_on=parsed.get('published_on') or timezone.localdate(),
                   reading_minutes=parsed.get('reading_minutes', 1), featured=parsed.get('featured', False),
-                  cover_id=parsed.get('cover_id'), collection_id=parsed.get('collection_id'),
+                  cover_id=parsed.get('cover_id'),
                   body=parsed.get('body', []), status='draft')
     try:
         with transaction.atomic():
             story.save()
+            if parsed.get('_gallery', {}).get('asset_ids'):
+                story.collection = ms.set_gallery('story', story.pk, None, parsed['_gallery'])
+                story.save()
             audit.write(request, action='story.create', object_type='story', object_id=story.pk,
                         after={'slug': story.slug, 'kind': story.kind, 'title': story.title})
     except DjangoValidationError as exc:
@@ -242,7 +243,20 @@ def update_story(request, story_id, version, parsed: dict) -> Story:
                 if _slug_taken(parsed['slug'], story.pk):
                     raise SlugTaken()
             before, after = {}, {}
+            if '_gallery' in parsed:
+                current = story.collection if story.collection_id else None
+                cur_ids = ms.gallery_asset_ids(current)
+                new_ids = parsed['_gallery'].get('asset_ids')
+                if current is not None or new_ids:
+                    gallery = ms.set_gallery('story', story.pk, current, parsed['_gallery'])
+                    if gallery.pk != story.collection_id:
+                        story.collection = gallery
+                        before['media'], after['media'] = [str(i) for i in cur_ids], [str(i) for i in new_ids or []]
+                    elif new_ids is not None and new_ids != cur_ids:
+                        before['media'], after['media'] = [str(i) for i in cur_ids], [str(i) for i in new_ids]
             for attr, value in parsed.items():
+                if attr == '_gallery':
+                    continue
                 if attr == 'body':
                     changed = story.body != value
                 else:
@@ -277,6 +291,8 @@ def story_blockers(story: Story) -> list[dict]:
     need(bool(story.eyebrow.strip()), 'REQUIRED', 'An eyebrow is required.', 'eyebrow')
     need(bool(story.dek.strip()), 'REQUIRED', 'A summary line is required.', 'dek')
     need(bool(story.body), 'REQUIRED', 'Add at least one block of body content.', 'body')
+    need(not (story.collection_id and ms.missing_alt_in([story.collection_id])), 'INVALID',
+         'Every image needs alt text (or must be marked decorative).', 'media.assetIds')
     return out
 
 

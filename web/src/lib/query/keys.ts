@@ -78,13 +78,14 @@ export const qk = {
 
     // media (S07 to S12)
     mediaAssets: (q?: object) => ['admin', 'media', 'assets', queryPart(q)] as const,
-    mediaCollections: () => ['admin', 'media', 'collections'] as const,
-    mediaCollectionsPicker: (q: string) => ['admin', 'media', 'collections', 'picker', q] as const,
-    mediaCollection: (id: string) => ['admin', 'media', 'collections', id] as const,
 
     // stories (S13, S14) and testimonials (S15, S16)
+    /** Prefix of every story list query. */
+    storiesAll: () => ['admin', 'stories'] as const,
     stories: (q?: object) => ['admin', 'stories', queryPart(q)] as const,
     story: (id: string) => ['admin', 'story', id] as const,
+    /** Prefix of every testimonial list query. */
+    testimonialsAll: () => ['admin', 'testimonials'] as const,
     testimonials: (q?: object) => ['admin', 'testimonials', queryPart(q)] as const,
     testimonial: (id: string) => ['admin', 'testimonial', id] as const,
 

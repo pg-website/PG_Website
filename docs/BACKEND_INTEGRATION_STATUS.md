@@ -153,7 +153,7 @@
 | F2 | MEDIUM | Add 6 Tier C error codes to error-codes.ts + error-copy.ts (fallback to HTTP copy until done) |
 | F3 | MEDIUM | Relax media usedBy[].id from UUID to string (site_section keys are strings, collection ids are integer strings) |
 | F4 | MEDIUM | Relax collection id from UUID to string (mediaCollectionIdSchema, event builder media step) |
-| F5 | LOW | S04 CMS publish returns status: published; web expects clean (one side needs to change) |
+| F5 | CLOSED | S04 CMS publish returns status: published; web (`publishCmsResultSchema`) already expects `published`. The note was stale; no code change (CMS-B1, 2026-11-01) |
 | F6 | LOW | Collection item cap mismatch: backend 50, web 24 (backend allows more, web enforces less) |
 
 ---

@@ -1,32 +1,24 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
 import { useDeferredValue, useMemo } from 'react'
 import { Heading } from '@/components/ui/Heading'
 import { ResponsiveImage } from '@/components/ui/media/ResponsiveImage'
 import { useBuilderSelector } from '@/features/event-builder/context'
 import { toSeoPreview } from '@/features/event-builder/review/seo-model'
-import { useApi } from '@/lib/api/adapters/useApi.browser'
-import { adminMediaCollectionQuery } from '@/lib/query/query-options/admin'
 import type { SeoImage } from '@/lib/seo/metadata'
 
 /** How the public event page will appear in search results and shared links (title, description, Open Graph image). */
 export function SeoPreview() {
-  const api = useApi().admin
   const server = useBuilderSelector((state) => state.server)
   const pending = useBuilderSelector((state) => state.pending)
-  const collectionId = useBuilderSelector(
-    (state) => state.pending.media?.collectionId ?? state.server.media.collectionId,
-  )
+  const firstId = useBuilderSelector((state) => ((state.pending.media?.assetIds as string[] | undefined) ?? state.server.media.assetIds)[0])
+  const serverAssets = useBuilderSelector((state) => state.server.media.assets)
   const deferredServer = useDeferredValue(server)
   const deferredPending = useDeferredValue(pending)
 
   // The public page uses the event cover or the first media image, else the brand card.
-  const collection = useQuery({
-    ...adminMediaCollectionQuery(api, (collectionId ?? '') as Parameters<typeof adminMediaCollectionQuery>[1]),
-    enabled: typeof collectionId === 'string' && collectionId !== '',
-  })
-  const first = collection.data?.items[0]
+  // Summaries come with the draft read; a just-added image shows after the next autosave.
+  const first = serverAssets.find((asset) => asset.id === firstId)
   const cover = useMemo<SeoImage | null>(
     () =>
       first === undefined ? null : { src: first.src, width: first.width, height: first.height, alt: first.alt ?? '' },

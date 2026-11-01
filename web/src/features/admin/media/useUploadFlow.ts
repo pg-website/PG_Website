@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useApi } from '@/lib/api/adapters/useApi.browser'
-import { MEDIA_CONTENT_TYPES, MAX_UPLOAD_BYTES } from '@/lib/api/types/admin/media'
+import { MEDIA_CONTENT_TYPES, MAX_UPLOAD_BYTES, type MediaAssetDto } from '@/lib/api/types/admin/media'
 import { qk } from '@/lib/query/keys'
 
 export type UploadStatus = 'idle' | 'uploading' | 'completing' | 'done' | 'error'
@@ -23,17 +23,17 @@ export function useUploadFlow() {
   const inFlight = useRef(false)
 
   const upload = useCallback(
-    async (file: File): Promise<void> => {
-      if (inFlight.current) return
+    async (file: File): Promise<MediaAssetDto | null> => {
+      if (inFlight.current) return null
 
       // Client-side validation
       if (!MEDIA_CONTENT_TYPES.includes(file.type as (typeof MEDIA_CONTENT_TYPES)[number])) {
         setState({ status: 'error', progress: null, error: 'Unsupported file type. Use JPEG, PNG, WebP, or AVIF.' })
-        return
+        return null
       }
       if (file.size > MAX_UPLOAD_BYTES) {
         setState({ status: 'error', progress: null, error: 'File exceeds the 10 MB limit.' })
-        return
+        return null
       }
 
       inFlight.current = true
@@ -86,7 +86,7 @@ export function useUploadFlow() {
         setState((s) => ({ ...s, status: 'completing', progress: 95 }))
 
         // Step 3 — notify server upload complete
-        await api.media.completeUpload(ticket.assetId)
+        const asset = await api.media.completeUpload(ticket.assetId)
 
         setState({ status: 'done', progress: 100, error: null })
         void queryClient.invalidateQueries({ queryKey: ['admin', 'media', 'assets'] })
@@ -96,10 +96,12 @@ export function useUploadFlow() {
           setState(IDLE)
           inFlight.current = false
         }, 2000)
+        return asset
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'Upload failed.'
         setState({ status: 'error', progress: null, error: msg })
         inFlight.current = false
+        return null
       }
     },
     [api, queryClient],

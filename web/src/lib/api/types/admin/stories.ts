@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { adminMediaListSchema, mediaListInputSchema } from '@/lib/api/types/admin/media'
 import { draftText, lastChangeSchema, publicationStatusSchema, writeVersionSchema } from '@/lib/api/types/admin/common'
 import { slugFieldSchema } from '@/lib/api/types/admin/slug'
 import { contentBlocksSchema } from '@/lib/api/types/content-blocks'
@@ -6,7 +7,6 @@ import {
   authoringSlugSchema,
   isoDateSchema,
   isoInstantSchema,
-  mediaCollectionIdSchema,
   uuidSchema,
   versionSchema,
 } from '@/lib/api/types/primitives'
@@ -52,8 +52,8 @@ export const adminStorySchema = z.object({
   publishedOn: isoDateSchema.nullable(),
   readingMinutes: z.int().min(1).max(120).nullable(),
   featured: z.boolean(),
-  /** Story media collection (S12). */
-  collectionId: mediaCollectionIdSchema.nullable(),
+  /** Story images (ordered asset list). */
+  media: adminMediaListSchema,
   status: publicationStatusSchema,
   version: versionSchema,
   updatedAt: isoInstantSchema,
@@ -81,7 +81,7 @@ export const updateStorySchema = z.strictObject({
   publishedOn: isoDateSchema.nullable().optional(),
   readingMinutes: z.int().min(1).max(120).nullable().optional(),
   featured: z.boolean().optional(),
-  collectionId: mediaCollectionIdSchema.nullable().optional(),
+  media: mediaListInputSchema.optional(),
 })
 export type UpdateStoryInput = z.infer<typeof updateStorySchema>
 

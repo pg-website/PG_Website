@@ -19,7 +19,7 @@ class PlayersView(AdminView):
 
 class PlayerDetailView(AdminView):
     def get(self, request, player_id):
-        return ok(ps.get_player(request, player_id))
+        return ok(ps.get_player(request, player_id), headers={'Cache-Control': 'no-store'})
 
 
 class PlayerRoleView(AdminView):

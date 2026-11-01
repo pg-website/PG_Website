@@ -53,6 +53,8 @@ export function GameSystemStep({ dataKey }: BuilderStepProps) {
   const groupId = useId()
 
   const pairingController = useController({ control, name: 'pairingMode' })
+  // Backend readiness requires rounds for swiss / round_robin.
+  const roundsRequired = pairingController.field.value === 'swiss' || pairingController.field.value === 'round_robin'
 
   return (
     <div className="grid min-w-0 gap-6">
@@ -121,8 +123,13 @@ export function GameSystemStep({ dataKey }: BuilderStepProps) {
               control={control}
               name="rounds"
               label="Rounds"
-              hint="1 to 20. Leave empty to decide later."
-              optionalLabel
+              hint={
+                roundsRequired
+                  ? '1 to 20. Required for Swiss tournaments.'
+                  : '1 to 20. Leave empty to decide later.'
+              }
+              required={roundsRequired}
+              optionalLabel={!roundsRequired}
             >
               {(field) => (
                 <IntInput
@@ -140,7 +147,7 @@ export function GameSystemStep({ dataKey }: BuilderStepProps) {
               name="timeControl"
               label="Time control"
               hint="For example 10+5. Up to 60 characters."
-              optionalLabel
+              required
             >
               {(field) => (
                 <Input

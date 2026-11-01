@@ -31,8 +31,6 @@ export const authoringSlugSchema = z.string().min(3).max(80).regex(SLUG_PATTERN)
 /** Internal entity id. `guid` accepts any 8-4-4-4-12 hex id, so deterministic mock ids are fine. Never used in public URLs. */
 export const uuidSchema = z.guid()
 
-/** Media collection id: the backend's integer primary key as a decimal string (ENDPOINTS-IMPLEMENTED D4), not a UUID. */
-export const mediaCollectionIdSchema = z.string().regex(/^[1-9]\d{0,17}$/)
 
 /** `Idempotency-Key` header value (contract 2.5, ARCH-001 11.8): a UUID v4 created when the user's intent starts. */
 export const idempotencyKeySchema = z.uuidv4().brand<'IdempotencyKey'>()

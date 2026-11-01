@@ -1,6 +1,7 @@
 import { z } from 'zod'
-import { mediaCollectionSchema } from '@/lib/api/types/media'
-import { isoInstantSchema, linkHrefSchema, plainText, safeHrefSchema, versionSchema } from '@/lib/api/types/primitives'
+import { mediaAssetSummarySchema } from '@/lib/api/types/admin/media'
+import { mediaCollectionSchema as publicMediaSchema } from '@/lib/api/types/media'
+import { isoInstantSchema, linkHrefSchema, plainText, safeHrefSchema, uuidSchema, versionSchema } from '@/lib/api/types/primitives'
 
 // Published site sections (contract P01; CONTENT-MODEL-MAP.md). Typed fields only, no HTML, no free-form layout.
 // A section is `{ key, version, updatedAt, content }`, a discriminated union on `key`, so a consumer that asks for
@@ -12,6 +13,15 @@ export type SiteSection = z.infer<typeof siteSectionSchema>
 
 export const cta = z.object({ label: plainText(60), href: linkHrefSchema })
 export type CtaDto = z.infer<typeof cta>
+
+/**
+ * Image slot. The public read is `{ mode, autoplay, intervalMs, items }`; the admin read adds `assetIds` and `assets`
+ * (PLAN-010). The draft save sends `{ assetIds, autoplay, intervalMs }` (the adapter converts, see real-admin.ts).
+ */
+const mediaCollectionSchema = publicMediaSchema.extend({
+  assetIds: z.array(uuidSchema).max(50).optional(),
+  assets: z.array(mediaAssetSummarySchema).max(50).optional(),
+})
 
 const eyebrow = plainText(60)
 const headline = plainText(160)

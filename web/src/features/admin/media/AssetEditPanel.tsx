@@ -178,6 +178,16 @@ export function AssetEditPanel({ asset, onClose, onSaved }: AssetEditPanelProps)
           Save
         </Button>
 
+        {asset.usageCount > 0 && (
+          <button
+            type="button"
+            disabled
+            title="Remove this asset from everything that uses it before deleting."
+            className="inline-flex min-h-tap cursor-not-allowed items-center justify-center rounded-public border border-line-admin px-4 py-2 font-ui text-sm font-semibold text-muted opacity-60"
+          >
+            Delete (in use)
+          </button>
+        )}
         {asset.usageCount === 0 && (
           <ConfirmAction
             renderTrigger={(open) => (

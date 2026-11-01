@@ -68,6 +68,4 @@ urlpatterns = [
     path('media/assets', md.AssetsView.as_view(), name='admin-media-assets'),
     path('media/assets/<str:asset_id>/complete', md.CompleteView.as_view(), name='admin-media-complete'),
     path('media/assets/<str:asset_id>', md.AssetDetailView.as_view(), name='admin-media-asset'),
-    path('media/collections', md.CollectionsView.as_view(), name='admin-media-collections'),
-    path('media/collections/<str:collection_id>', md.CollectionDetailView.as_view(), name='admin-media-collection'),
 ]

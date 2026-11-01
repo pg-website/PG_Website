@@ -1,4 +1,4 @@
-import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query'
+import { queryOptions } from '@tanstack/react-query'
 import type { PgAdminApi } from '@/lib/api/pg-admin-api'
 import type { AuditQuery } from '@/lib/api/types/admin/control-audit'
 import type { AdminCheckInQuery } from '@/lib/api/types/admin/control-checkin'
@@ -25,7 +25,6 @@ type MessageId = Parameters<Admin['control']['getMessage']>[1]
 type StoryId = Parameters<Admin['stories']['getStory']>[0]
 type TestimonialId = Parameters<Admin['testimonials']['getTestimonial']>[0]
 type PlayerId = Parameters<Admin['players']['getPlayer']>[0]
-type CollectionId = Parameters<Admin['media']['getCollection']>[0]
 
 export const adminDashboardQuery = (admin: Admin) =>
   queryOptions({
@@ -157,38 +156,12 @@ export const adminLegalPageQuery = (admin: Admin, page: LegalPage) =>
     staleTime: STALE_TIME.snapshot,
   })
 
-// ---------- media (S09, S12) ----------
+// ---------- media (S09) ----------
 
 export const adminMediaAssetsQuery = (admin: Admin, query?: MediaAssetsQuery) =>
   queryOptions({
     queryKey: qk.admin.mediaAssets(query),
     queryFn: ({ signal }) => admin.media.listAssets(query, { signal }),
-  })
-
-/** Page size of the collection picker (server maximum); later pages load on demand. */
-export const COLLECTION_PICKER_PAGE_SIZE = 100
-
-export const adminMediaCollectionsQuery = (admin: Admin) =>
-  queryOptions({
-    queryKey: qk.admin.mediaCollections(),
-    queryFn: ({ signal }) => admin.media.listCollections({ pageSize: COLLECTION_PICKER_PAGE_SIZE }, { signal }),
-  })
-
-/** Collection picker: searchable and paged (q, page), so a library bigger than one page is reachable. */
-export const adminMediaCollectionsPickerQuery = (admin: Admin, q: string) =>
-  infiniteQueryOptions({
-    queryKey: qk.admin.mediaCollectionsPicker(q),
-    queryFn: ({ signal, pageParam }) =>
-      admin.media.listCollections({ page: pageParam, ...(q === '' ? {} : { q }) }, { signal }),
-    initialPageParam: 1,
-    getNextPageParam: (last) =>
-      last.pagination.page < last.pagination.totalPages ? last.pagination.page + 1 : undefined,
-  })
-export const adminMediaCollectionQuery = (admin: Admin, id: CollectionId) =>
-  queryOptions({
-    queryKey: qk.admin.mediaCollection(id),
-    queryFn: ({ signal }) => admin.media.getCollection(id, { signal }),
-    staleTime: STALE_TIME.snapshot,
   })
 
 // ---------- stories and testimonials ----------

@@ -408,8 +408,8 @@ Public player profile (PLAN-007, supersedes the FEAT-000 OQ-26 default): `GET /p
 
 | ID | Endpoint | Request, response | SM | Features | Screens |
 |---|---|---|---|---|---|
-| G01 | GET /admin/players | Query `q` (name, email, phone), `page`. `Page<AdminPlayerRowDto>`. | - | F-AADM-001 | 54 |
-| G02 | GET /admin/players/{id} | Record: event history, attendance, rating context, permitted private fields only (limited by role). | - | F-AADM-001; F-EVT-017 | 54 |
+| G01 | GET /admin/players | Query `q` (name, email, phone; max 100; phone-like queries match on digits only), `page`. `Page<AdminPlayerRowDto>`; rows add `rating {pool, rating, provisional} \| null` (highest-games pool) and `attendancePct \| null`. | - | F-AADM-001 | 54 |
+| G02 | GET /admin/players/{id} | Record: event history, attendance, rating context, permitted private fields only (limited by role). Adds `ratings[].rd`, `registered`, `nextEvent {id, slug, title, startsAt} \| null`, `historyTruncated`, row `rating`/`attendancePct`. Each view is audited (`player.view_private`, no PII, one row per admin+player per 5 min, fail closed) and `no-store`. | - | F-AADM-001; F-EVT-017 | 54 |
 | G03 | PUT /admin/players/{id}/role | `IK`. `{ role: 'player'\|'admin' }`. Audited; also guards against removing the last admin (inferred). Initial admins are seeded, not self-granted (FEAT-000 OQ-17). | - | F-AADM-002; F-AUTH-007 | 54 |
 | G04 | GET /admin/payments | Query `status`, `eventId`, `mismatch`, `from`, `to`, `page`. Global ledger: player, event, amount, status, provider ids, updated, mismatch flag. | PO | F-AADM-004; F-PAY-005 | 55 |
 | G05 | POST /admin/payments/{id}/refund | `IK`. `{ amountPaise?, reason }` (full refund by default). Calls Razorpay, then updates payment and registration **together**; refund state `pending` until the provider event confirms. | PO, R | F-PAY-007 | 50, 55 |

@@ -17,7 +17,7 @@ const eventLink = z.object({
   slug: slugSchema,
   title: plainText(120),
   startsAt: isoInstantSchema,
-  area: plainText(80),
+  area: z.string().max(80), // optional in the event builder, so may be empty
   status: eventStatusSchema,
   cover: mediaRefSchema.nullable(),
 })

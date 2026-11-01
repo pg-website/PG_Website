@@ -142,8 +142,29 @@ class MediaCollection(VersionedModel):
     mode = models.CharField(max_length=10, choices=MODES, default="static")
     autoplay = models.BooleanField(default=False)
     interval_ms = models.PositiveIntegerField(
-        default=6000, validators=[MinValueValidator(2000), MaxValueValidator(60000)]
+        default=5000, validators=[MinValueValidator(2000), MaxValueValidator(60000)]
     )
+    # PLAN-010: every collection is a private gallery owned by exactly one event, story or site section. Never shown
+    # or shared in the admin UI. `owner_kind` is '' only for legacy rows no owner references.
+    OWNER_KINDS = [
+        ("", "none"),
+        ("event", "event"),
+        ("event_archive", "event_archive"),
+        ("story", "story"),
+        ("site_section", "site_section"),
+    ]
+    owner_kind = models.CharField(max_length=20, blank=True, default="", choices=OWNER_KINDS)
+    owner_ref = models.CharField(max_length=64, blank=True, default="")
+
+    class Meta:
+        indexes = [models.Index(fields=["owner_kind", "owner_ref"], name="media_coll_owner")]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["owner_kind", "owner_ref"],
+                condition=models.Q(owner_kind__in=["event", "event_archive", "story"]),
+                name="uniq_media_coll_single_owner",
+            )
+        ]
 
     def __str__(self):
         return self.key

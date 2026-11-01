@@ -18,7 +18,7 @@ import audit
 from content import validation as v
 from content.models import ContentDraft, ContentVersion, LegalPage, MediaAsset, MediaCollection, SiteSection
 from content.selectors import collections_for
-from content.serializers import media_dto, resolve_collection_refs
+from content.serializers import collection_dto, media_dto
 from core.errors import NotFound, NotPublishable, ValidationFailed, VersionConflict
 from core.responses import iso
 
@@ -207,10 +207,18 @@ def list_sections() -> list[dict]:
     return rows
 
 
-def _referenced_collections(content) -> list[dict]:
-    keys = sorted(set(v.collect_collection_refs(content)))[:50]
-    found = {c.key: c for c in MediaCollection.objects.filter(key__in=keys)}
-    return [{'id': str(found[k].pk), 'key': k, 'name': found[k].name or k} for k in keys if k in found]
+def resolve_admin_refs(value, collections: dict):
+    """Admin read of section content: each `{collection: key}` reference becomes the private gallery in the public
+    shape (mode, autoplay, intervalMs, items) plus `assetIds` and `assets` summaries (PLAN-010)."""
+    if isinstance(value, dict):
+        if set(value) == {'collection'} and isinstance(value['collection'], str):
+            c = collections.get(value['collection'])
+            gallery = ms.gallery_dto(c)
+            return {**collection_dto(c), 'assetIds': gallery['assetIds'], 'assets': gallery['assets']}
+        return {k: resolve_admin_refs(x, collections) for k, x in value.items()}
+    if isinstance(value, list):
+        return [resolve_admin_refs(x, collections) for x in value]
+    return value
 
 
 def section_detail(key) -> dict:
@@ -232,15 +240,14 @@ def section_detail(key) -> dict:
     return {
         'key': key, 'status': status, 'hasUnpublishedChanges': unpublished,
         'version': draft.version if draft is not None else 0,
-        'published': (_wrapped(key, live.version, live.updated_at, resolve_collection_refs(live.content, collections))
+        'published': (_wrapped(key, live.version, live.updated_at, resolve_admin_refs(live.content, collections))
                       if live is not None else None),
-        'draft': (_wrapped(key, draft.version, draft.updated_at, resolve_collection_refs(draft.content, collections))
+        'draft': (_wrapped(key, draft.version, draft.updated_at, resolve_admin_refs(draft.content, collections))
                   if unpublished else None),
         'updatedAt': iso(max(stamps) if stamps else EPOCH),
         'lastChange': _last_change('site', key, draft),
         'publishedAt': iso(live.updated_at) if live is not None else None,
         'publishedVersion': live.version if live is not None else None,
-        'collections': _referenced_collections(working) if working else [],
         'updatedBy': _who(draft.updated_by) if has else None,
         'changeSummary': (draft.change_summary or None) if has else None,
     }
@@ -259,77 +266,76 @@ def _validate_section(key, content, field='content'):
         raise _content_errors(exc, field) from None
 
 
+_GALLERY_KEYS = ms.GALLERY_INPUT_KEYS | ms.GALLERY_ECHO_KEYS
 _RESOLVED_KEYS = {'mode', 'autoplay', 'intervalMs', 'items'}
 
 
-def _is_resolved_collection(value) -> bool:
+def _is_gallery_input(value) -> bool:
+    """`{assetIds, autoplay?, intervalMs?}` (what the admin sends), tolerating the read-only keys it was read with."""
+    return isinstance(value, dict) and 'assetIds' in value and set(value) <= _GALLERY_KEYS
+
+
+def _is_legacy_resolved(value) -> bool:
     return (isinstance(value, dict) and set(value) == _RESOLVED_KEYS and isinstance(value['items'], list)
             and value['mode'] in ('static', 'carousel'))
 
 
-def _collection_for_resolved(resolved: dict, current_ref, path: str, request) -> str:
-    """Map a resolved `{mode, autoplay, intervalMs, items}` (what the read endpoints return) back to a collection key.
-    Items are matched by their media `src`. Order of preference: the collection already referenced at this path, any
-    collection with identical settings and items, else a new collection is created in this transaction."""
+def _legacy_to_gallery(resolved: dict, path: str) -> dict:
+    """Old clients echo the public shape; map its images back to asset ids by `src`."""
     srcs = []
     for n, item in enumerate(resolved['items']):
         src = item.get('src') if isinstance(item, dict) else None
         if not isinstance(src, str):
             raise ValidationFailed(fields={f'content.{path}.items.{n}': ['Send the image as it was read.']})
         srcs.append(src)
-    if len(srcs) > ms.MAX_COLLECTION_ITEMS or len(set(srcs)) != len(srcs):
-        raise ValidationFailed(fields={f'content.{path}.items': ['Use each image once, at most '
-                                                                 f'{ms.MAX_COLLECTION_ITEMS} images.']})
     assets = {}
     for asset in MediaAsset.objects.filter(src__in=srcs, archived=False).order_by('-created_at'):
         assets.setdefault(asset.src, asset.pk)
     for n, src in enumerate(srcs):
         if src not in assets:
             raise ValidationFailed(fields={f'content.{path}.items.{n}': ['This image is not in the media library.']})
-    ids = [assets[s] for s in srcs]
-    settings_match = {'mode': resolved['mode'], 'autoplay': resolved['autoplay'], 'interval_ms': resolved['intervalMs']}
+    return {'assetIds': [str(assets[s]) for s in srcs], 'autoplay': resolved['autoplay'],
+            'intervalMs': resolved['intervalMs']}
 
-    def same(collection) -> bool:
-        return (all(getattr(collection, k) == val for k, val in settings_match.items())
-                and list(collection.items.order_by('order', 'id').values_list('asset_id', flat=True)) == ids)
 
-    if isinstance(current_ref, dict) and isinstance(current_ref.get('collection'), str):
-        current = MediaCollection.objects.filter(key=current_ref['collection']).first()
-        if current is not None and same(current):
-            return current.key
-    for candidate in MediaCollection.objects.filter(**settings_match).order_by('id'):
-        if same(candidate):
-            return candidate.key
-    errors = {}
-    if not ms._is_int(resolved['intervalMs']) or not 2000 <= resolved['intervalMs'] <= 60000:
-        errors[f'content.{path}.intervalMs'] = ['Use 2000 to 60000 milliseconds.']
-    if not isinstance(resolved['autoplay'], bool):
-        errors[f'content.{path}.autoplay'] = ['Send true or false.']
+def _gallery_for_slot(section_key: str, raw: dict, current_ref, live_keys: set, path: str) -> str:
+    """Store the slot's images in a private gallery owned by this section slot and return its collection key.
+    The gallery the live copy shows is never edited in place: a draft edit of a published slot clones it first."""
+    parsed, errors = ms.parse_gallery(raw, f'content.{path}')
     if errors:
         raise ValidationFailed(fields=errors)
-    collection = MediaCollection(key=ms._new_key(f'section {path}'), name=f'Section {path}'[:120], **settings_match)
-    try:
-        collection.save()
-    except DjangoValidationError as exc:
-        raise _model_errors(exc) from None
-    ms._replace_items(collection, ids)
-    audit.write(request, action='media.collection.create', object_type='media_collection', object_id=collection.pk,
-                after={'name': collection.name, 'mode': collection.mode, 'items': [str(i) for i in ids],
-                       'source': 'cms_draft'})
-    return collection.key
+    owner_ref = f'{section_key}:{path}'
+    current = None
+    if isinstance(current_ref, dict) and isinstance(current_ref.get('collection'), str):
+        current = MediaCollection.objects.filter(key=current_ref['collection']).first()
+        if current is not None and current.key in live_keys:
+            # The live copy shows this gallery: keep it intact and fork a draft gallery from it.
+            parsed.setdefault('asset_ids', ms.gallery_asset_ids(current))
+            parsed.setdefault('autoplay', current.autoplay)
+            parsed.setdefault('interval_ms', current.interval_ms)
+            current = None
+        elif current is not None and (current.owner_kind != 'site_section' or current.owner_ref != owner_ref):
+            parsed.setdefault('asset_ids', ms.gallery_asset_ids(current))
+            current = None
+    gallery = ms.set_gallery('site_section', owner_ref, current, parsed, f'content.{path}.assetIds')
+    return gallery.key
 
 
-def _unresolve_collections(value, current, request, path=''):
-    """Replace every resolved collection in submitted section content by its `{collection: key}` reference. The legacy
-    reference form passes through unchanged. `current` is the stored content at the same place (or None)."""
-    if _is_resolved_collection(value):
-        return {'collection': _collection_for_resolved(value, current, path or 'content', request)}
+def _unresolve_collections(value, current, section_key, live_keys, path=''):
+    """Replace every gallery in submitted section content by its `{collection: key}` reference. The legacy reference
+    form passes through unchanged. `current` is the stored content at the same place (or None)."""
+    if _is_legacy_resolved(value):
+        value = _legacy_to_gallery(value, path or 'content')
+    if _is_gallery_input(value):
+        return {'collection': _gallery_for_slot(section_key, value, current, live_keys, path or 'content')}
     if isinstance(value, dict):
-        return {k: _unresolve_collections(x, current.get(k) if isinstance(current, dict) else None, request,
-                                          f'{path}.{k}' if path else k) for k, x in value.items()}
+        return {k: _unresolve_collections(x, current.get(k) if isinstance(current, dict) else None,
+                                          section_key, live_keys, f'{path}.{k}' if path else k)
+                for k, x in value.items()}
     if isinstance(value, list):
         return [_unresolve_collections(x, current[i] if isinstance(current, list) and i < len(current) else None,
-                                       request, f'{path}.{i}' if path else str(i)) for i, x in enumerate(value)]
+                                       section_key, live_keys, f'{path}.{i}' if path else str(i))
+                for i, x in enumerate(value)]
     return value
 
 
@@ -357,7 +363,8 @@ def save_section_draft(request, key, data) -> dict:
         # here is rolled back with the rest if validation fails below.
         live = _live_section(key)
         stored = draft.content if _has_draft(draft) else (live.content if live is not None else None)
-        content = _unresolve_collections(content, stored, request)
+        live_keys = set(v.collect_collection_refs(live.content)) if live is not None else set()
+        content = _unresolve_collections(content, stored, key, live_keys)
         _validate_section(key, content)
         if _has_draft(draft) and draft.content == content:
             return _draft_result(key, draft)
@@ -399,6 +406,12 @@ def publish_section(request, key, data) -> dict:
             blockers = [{'code': 'INVALID_CONTENT', 'reason': m, 'field': 'content'}
                         for m in (exc.fields or {}).get('content', [])[:10]]
             raise NotPublishable(blockers=blockers or None, fields=exc.fields) from None
+        gallery_keys = set(v.collect_collection_refs(draft.content))
+        if gallery_keys and ms.missing_alt_in(
+                MediaCollection.objects.filter(key__in=gallery_keys).values_list('pk', flat=True)):
+            reason = 'Every image needs alt text (or must be marked decorative).'
+            raise NotPublishable(blockers=[{'code': 'INVALID', 'reason': reason, 'field': 'content'}],
+                                 fields={'content': [reason]})
         before = {'status': live.status if live else None, 'version': live.version if live else None}
         if live is None:
             live = SiteSection(key=key)

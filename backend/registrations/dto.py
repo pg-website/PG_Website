@@ -162,4 +162,5 @@ def event_cover(event):
 
 
 def venue_text(event) -> str:
-    return f'{event.venue_name} · {event.area}'[:200]
+    # Venue and area are optional in the builder; join only what is set (the schema needs a non-empty string).
+    return ' · '.join(p for p in (event.venue_name, event.area) if p)[:200] or 'Venue to be announced'

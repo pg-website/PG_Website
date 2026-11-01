@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { adminActorSchema, draftText, lastChangeSchema, writeVersionSchema } from '@/lib/api/types/admin/common'
+import { adminActorSchema, draftText, writeVersionSchema } from '@/lib/api/types/admin/common'
 import { mediaModeSchema } from '@/lib/api/types/media'
 import {
   countSchema,
@@ -8,7 +8,6 @@ import {
   isBackendUrl,
   isoInstantSchema,
   mediaSrcSchema,
-  mediaCollectionIdSchema,
   plainText,
   uuidSchema,
   versionSchema,
@@ -53,11 +52,11 @@ export const MEDIA_ASSET_STATUSES = ['draft', 'published', 'archived'] as const
 export const mediaAssetStatusSchema = z.enum(MEDIA_ASSET_STATUSES)
 export type MediaAssetStatus = z.infer<typeof mediaAssetStatusSchema>
 
-export const MEDIA_USER_KINDS = ['event', 'story', 'testimonial', 'site_section', 'collection'] as const
+export const MEDIA_USER_KINDS = ['event', 'story', 'testimonial', 'site_section'] as const
 export const mediaUserKindSchema = z.enum(MEDIA_USER_KINDS)
 
 /** One place an asset is referenced. Deleting an asset with any reference returns ASSET_IN_USE (F-ACMS-007). */
-/** `id` is a UUID for events, stories and testimonials, the section key for `site_section`, an integer string for `collection`. */
+/** `id` is a UUID for events, stories and testimonials, the section key for `site_section`. */
 export const mediaUsageSchema = z.object({
   kind: mediaUserKindSchema,
   id: z.string().min(1).max(100),
@@ -99,7 +98,7 @@ const altState = z.discriminatedUnion('decorative', [
 export const mediaAssetSchema = z.object({ ...assetBase, status: mediaAssetStatusSchema }).and(altState)
 export type MediaAssetDto = z.infer<typeof mediaAssetSchema>
 
-/** Shorter row used inside a collection. */
+/** Shorter row used inside an asset list. */
 export const mediaAssetSummarySchema = z.object({
   id: uuidSchema,
   src: mediaSrcSchema,
@@ -123,14 +122,6 @@ export const mediaAssetsQuerySchema = z.strictObject({
 })
 export type MediaAssetsQuery = z.infer<typeof mediaAssetsQuerySchema>
 
-/** S12 list query: name or key search and paging. */
-export const mediaCollectionsQuerySchema = z.strictObject({
-  q: z.string().trim().min(1).max(100).optional(),
-  page: z.int().min(1).optional(),
-  pageSize: z.int().min(1).max(100).optional(),
-})
-export type MediaCollectionsQuery = z.infer<typeof mediaCollectionsQuerySchema>
-
 /**
  * `PATCH /admin/media/assets/{assetId}` (S10). Strict and partial. `focal` is 0..1 on both axes (out of range rejected,
  * never clamped, F-14). Choosing `decorative: true` clears alt; the server rejects both together.
@@ -153,43 +144,31 @@ export const updateMediaAssetSchema = z
   })
 export type UpdateMediaAsset = z.infer<typeof updateMediaAssetSchema>
 
-// ---------- Collections (S12) ----------
+// ---------- Asset lists (events, stories, site sections; PLAN-010) ----------
 
-/** Autoplay interval bounds match the public collection (media.ts). */
-const intervalMs = z.int().min(2000).max(60000)
+/** Autoplay interval bounds match the public carousel (media.ts). */
+export const MEDIA_INTERVAL_MIN = 2000
+export const MEDIA_INTERVAL_MAX = 60000
+export const MEDIA_INTERVAL_DEFAULT = 5000
+const intervalMs = z.int().min(MEDIA_INTERVAL_MIN).max(MEDIA_INTERVAL_MAX)
 
-/** Backend cap per collection (ENDPOINTS-IMPLEMENTED D4). The public gallery UI may show fewer. */
-export const MAX_COLLECTION_ITEMS = 50
+/** Backend cap per asset list. */
+export const MAX_ASSET_LIST_ITEMS = 50
 
-export const mediaCollectionAdminSchema = z.object({
-  id: mediaCollectionIdSchema,
-  name: plainText(120),
+/** Admin read of an owner's ordered images. `mode` is derived by the server (1 = static, 2+ = carousel). */
+export const adminMediaListSchema = z.object({
+  assetIds: z.array(uuidSchema).max(MAX_ASSET_LIST_ITEMS),
+  assets: z.array(mediaAssetSummarySchema).max(MAX_ASSET_LIST_ITEMS),
   mode: mediaModeSchema,
   autoplay: z.boolean(),
   intervalMs,
-  items: z.array(mediaAssetSummarySchema).max(MAX_COLLECTION_ITEMS),
-  usageCount: countSchema,
-  version: versionSchema,
-  updatedAt: isoInstantSchema,
-  lastChange: lastChangeSchema.nullable(),
 })
-export type MediaCollectionAdminDto = z.infer<typeof mediaCollectionAdminSchema>
+export type AdminMediaList = z.infer<typeof adminMediaListSchema>
 
-const collectionItemRef = z.strictObject({ assetId: uuidSchema })
-
-/** `POST /admin/media/collections`. Order is the array order. 0 items renders the placeholder, 1 item is static (UI rules). */
-export const createMediaCollectionSchema = z.strictObject({
-  name: z.string().trim().min(1).max(120),
-  mode: mediaModeSchema,
-  autoplay: z.boolean(),
-  intervalMs,
-  items: z.array(collectionItemRef).max(MAX_COLLECTION_ITEMS),
+/** Write shape: `{ assetIds, autoplay?, intervalMs? }`. No duplicates. */
+export const mediaListInputSchema = z.strictObject({
+  assetIds: z.array(uuidSchema).max(MAX_ASSET_LIST_ITEMS).refine((v) => new Set(v).size === v.length, 'No duplicates'),
+  autoplay: z.boolean().optional(),
+  intervalMs: intervalMs.optional(),
 })
-export type CreateMediaCollection = z.infer<typeof createMediaCollectionSchema>
-
-/** `PATCH /admin/media/collections/{id}`. */
-export const updateMediaCollectionSchema = createMediaCollectionSchema
-  .partial()
-  .extend({ version: writeVersionSchema })
-  .strict()
-export type UpdateMediaCollection = z.infer<typeof updateMediaCollectionSchema>
+export type MediaListInput = z.infer<typeof mediaListInputSchema>

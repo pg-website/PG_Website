@@ -55,7 +55,6 @@ export function ReviewActions() {
   }
 
   const previewCopy = previewError === null ? null : copyFor(previewError, { action: 'open the preview' })
-
   return (
     <section aria-labelledby="review-actions" className="grid min-w-0 gap-3">
       <Heading level={2} size="card" id="review-actions">

@@ -1445,7 +1445,7 @@ paths:
         `error.fields` by its exact builder path (`basics.slug`, `registration.capacity`, `basics.endsAt`, ...), including
         SLUG_TAKEN, SLUG_LOCKED, locked fields and model validation errors (mapped from snake_case), so a client can drop
         that field from its pending patch. `registration.capacity` null (or an empty string) means unlimited. `basics.slug`
-        null clears the slug of a draft. Re-sending an unchanged value (including the media collection id) is a no-op: no
+        null clears the slug of a draft. Re-sending an unchanged value (including the media asset list) is a no-op: no
         version bump, no audit row. Changing an operational field
         (capacity, waitlist, min age, membership, price, refund window, hold, rated, pool, pairing mode, rounds,
         audience) of a public event needs `X-Step-Up-Token` (`401 STEP_UP_REQUIRED`). Operational changes are audited
@@ -1519,9 +1519,11 @@ paths:
                 media:
                   type: object
                   additionalProperties: false
+                  description: 'Private gallery of this event (never shared). `assetIds` replaces the whole ordered list (max 50, no duplicates, archived assets cannot be newly added). The mode is derived: 1 asset is static, 2 or more is a carousel.'
                   properties:
-                    collectionId: {type: string, pattern: '^[0-9]+$', nullable: true, description: Media collection id (integer key sent as a string)}
-                    mode: {type: string, enum: [static, carousel]}
+                    assetIds: {type: array, maxItems: 50, items: {type: string, format: uuid}}
+                    autoplay: {type: boolean, default: false}
+                    intervalMs: {type: integer, minimum: 2000, maximum: 60000, default: 5000}
                 communications:
                   type: object
                   additionalProperties: false
@@ -1727,7 +1729,7 @@ paths:
     patch:
       tags: [Admin]
       summary: S10 Update alt text, decorative flag, focal point, credit or archive state
-      description: 'Missing alt text warns (`data.warnings[]` with code ALT_MISSING) and never blocks. Archiving hides the asset from the library and from new collections; existing references keep working. Each change writes one revalidation row per referencing entity. `version` is optional; when sent, a stale value returns VERSION_CONFLICT.'
+      description: 'Missing alt text warns (`data.warnings[]` with code ALT_MISSING) and never blocks. Archiving hides the asset from the library and from new galleries; existing references keep working. Each change writes one revalidation row per referencing entity. `version` is optional; when sent, a stale value returns VERSION_CONFLICT.'
       requestBody:
         required: true
         content:
@@ -1773,136 +1775,13 @@ paths:
     delete:
       tags: [Admin]
       summary: S11 Delete an unreferenced asset
-      description: 'ASSET_IN_USE (409) while a collection, event cover, story cover or testimonial portrait uses it; archive instead (S10). The storage object is removed after commit.'
+      description: 'ASSET_IN_USE (409) while a gallery, event cover, story cover or testimonial portrait uses it; archive instead (S10). The storage object is removed after commit.'
       responses:
         '200': {$ref: '#/components/responses/EmptyOk'}
         '401': {$ref: '#/components/responses/Error'}
         '403': {$ref: '#/components/responses/Error'}
         '404': {$ref: '#/components/responses/Error'}
         '409': {description: ASSET_IN_USE, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorEnvelope'}}}}
-  /admin/media/collections:
-    get:
-      tags: [Admin]
-      summary: S12 List media collections
-      parameters:
-        - {name: q, in: query, schema: {type: string, maxLength: 100}}
-        - {$ref: '#/components/parameters/Page'}
-        - {$ref: '#/components/parameters/PageSize'}
-      responses:
-        '200':
-          description: Page of collections (without items; `itemCount` only)
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Envelope'
-                  - type: object
-                    properties:
-                      data: {type: array, items: {$ref: '#/components/schemas/AdminMediaCollection'}}
-        '400': {$ref: '#/components/responses/Error'}
-        '401': {$ref: '#/components/responses/Error'}
-        '403': {$ref: '#/components/responses/Error'}
-    post:
-      tags: [Admin]
-      summary: S12 Create a media collection
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [name]
-              additionalProperties: false
-              properties:
-                name: {type: string, minLength: 1, maxLength: 120}
-                mode: {type: string, enum: [static, carousel]}
-                autoplay: {type: boolean}
-                intervalMs: {type: integer, minimum: 2000, maximum: 60000}
-                items:
-                  type: array
-                  maxItems: 50
-                  items:
-                    type: object
-                    required: [assetId]
-                    additionalProperties: false
-                    properties:
-                      assetId: {type: string, format: uuid}
-      responses:
-        '201':
-          description: The collection with ordered items
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Envelope'
-                  - type: object
-                    properties:
-                      data: {$ref: '#/components/schemas/AdminMediaCollection'}
-        '400': {$ref: '#/components/responses/Error'}
-        '401': {$ref: '#/components/responses/Error'}
-        '403': {$ref: '#/components/responses/Error'}
-  /admin/media/collections/{collectionId}:
-    parameters:
-      - {name: collectionId, in: path, required: true, schema: {type: string, pattern: '^[0-9]+$'}}
-    get:
-      tags: [Admin]
-      summary: S12 Read a media collection with ordered items
-      responses:
-        '200':
-          description: The collection
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Envelope'
-                  - type: object
-                    properties:
-                      data: {$ref: '#/components/schemas/AdminMediaCollection'}
-        '401': {$ref: '#/components/responses/Error'}
-        '403': {$ref: '#/components/responses/Error'}
-        '404': {$ref: '#/components/responses/Error'}
-    patch:
-      tags: [Admin]
-      summary: S12 Update a media collection
-      description: '`items` replaces the whole ordered list. Archived assets cannot be added. One revalidation row is written per entity that shows the collection. `version` is optional; when sent, a stale value returns VERSION_CONFLICT.'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              additionalProperties: false
-              properties:
-                version: {type: integer, minimum: 0}
-                name: {type: string, minLength: 1, maxLength: 120}
-                mode: {type: string, enum: [static, carousel]}
-                autoplay: {type: boolean}
-                intervalMs: {type: integer, minimum: 2000, maximum: 60000}
-                items:
-                  type: array
-                  maxItems: 50
-                  items:
-                    type: object
-                    required: [assetId]
-                    additionalProperties: false
-                    properties:
-                      assetId: {type: string, format: uuid}
-      responses:
-        '200':
-          description: The collection after the change
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Envelope'
-                  - type: object
-                    properties:
-                      data: {$ref: '#/components/schemas/AdminMediaCollection'}
-        '400': {$ref: '#/components/responses/Error'}
-        '401': {$ref: '#/components/responses/Error'}
-        '403': {$ref: '#/components/responses/Error'}
-        '404': {$ref: '#/components/responses/Error'}
-        '409': {description: VERSION_CONFLICT, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorEnvelope'}}}}
   /admin/cms/sections:
     get:
       tags: [Admin]
@@ -1949,7 +1828,7 @@ paths:
               additionalProperties: false
               properties:
                 version: {type: integer, minimum: 0}
-                content: {type: object, description: 'Section content in the public shape. A media collection may be sent resolved ({mode, autoplay, intervalMs, items}, as the read returns it) or as the legacy {collection: key} reference. A resolved collection is mapped server-side to a collection key: the one already referenced at that place, else any collection with identical settings and images (items matched by `src`), else a new collection is created. Stored as {collection: key}.'}
+                content: {type: object, description: 'Section content in the public shape. Each image slot is sent as `{assetIds: [...], autoplay?, intervalMs?}` (max 50 ids; 1 = static, 2+ = carousel, derived). The server keeps a private gallery per slot and stores `{collection: key}`; a published slot is forked on the first draft edit so the live copy never changes before publish. The legacy resolved shape `{mode, autoplay, intervalMs, items}` is still accepted (images matched by `src`). Publish needs alt text (or decorative) on every image.'}
                 summary: {type: string, maxLength: 300}
       responses:
         '200': {$ref: '#/components/responses/AdminCmsSectionOk'}
@@ -2316,8 +2195,8 @@ paths:
       description: |
         `422 NOT_PUBLISHABLE` with `error.blockers[]` (and `error.fields`) when the draft is not ready or not a draft;
         `409 SLUG_TAKEN` (named in `error.fields["basics.slug"]`). Blockers: required copy, a future start, registration
-        closes after it opens and no later than the event start (`registration.closesAt`), and, when a media collection
-        is set, at least one image with alt text or marked decorative (`media.collectionId`). Capacity is NOT required:
+        closes after it opens and no later than the event start (`registration.closesAt`), and, when images are set,
+        alt text (or decorative) on every image (`media.assetIds`). Capacity is NOT required:
         a null capacity is an unlimited event. Stamps the first-publish time (slug is locked from now on), writes an audit row and an
         `event/published` revalidation outbox row in the same transaction.
       parameters:
@@ -2866,12 +2745,12 @@ paths:
   /admin/events/{eventId}/recap:
     get:
       tags: [Admin]
-      summary: C16 Recap, gallery collection and archive flag
+      summary: C16 Recap, archive gallery images and archive flag
       parameters:
         - {$ref: '#/components/parameters/EventId'}
       responses:
         '200':
-          description: EventRecapDto (eventId, recap, collectionId, archivePublished, archivePublishedAt, canPublishArchive, version, lastChange)
+          description: EventRecapDto (eventId, recap, assetIds, archivePublished, archivePublishedAt, canPublishArchive, version, lastChange)
           content:
             application/json:
               schema:
@@ -2900,7 +2779,7 @@ paths:
               properties:
                 version: {type: integer, minimum: 0}
                 recap: {type: string, maxLength: 4000}
-                collectionId: {type: string, pattern: '^[0-9]+$', nullable: true, description: Media collection id (integer key sent as a string)}
+                assetIds: {type: array, maxItems: 50, items: {type: string, format: uuid}, description: 'Ordered archive gallery images (private to the event). Replaces the whole list.'}
                 publishArchive: {type: boolean}
       responses:
         '200':
@@ -3096,7 +2975,7 @@ paths:
     get:
       tags: [Admin]
       summary: G01 Search players
-      description: "Page of AdminPlayerRowDto (id, name, email, city, role, status, eventsAttended, joinedAt), newest first. `q` matches name, email or phone (max 100 characters). Admin only."
+      description: "Page of AdminPlayerRowDto (id, name, email, city, role, status, eventsAttended, joinedAt, plus additive `rating` {pool, rating, provisional} of the highest-games pool or null when unrated (show \"New\" when null or provisional) and `attendancePct` 0-100 = attended / confirmed registrations of past events, null when there are none), newest first. `q` matches name or email (case-insensitive substring) and, when it looks like a phone number (digits, spaces, dashes, parentheses, optional leading +, at least 4 digits), phone on digits only; more than 100 characters is VALIDATION_FAILED. Admin only."
       parameters:
         - {name: q, in: query, schema: {type: string, maxLength: 100}}
         - {$ref: '#/components/parameters/Page'}
@@ -3119,7 +2998,7 @@ paths:
     get:
       tags: [Admin]
       summary: G02 Player record
-      description: "AdminPlayerDto: the row plus phone, birthday, area, chessComHandle, fideId (null when not provided), `visibleFields`, `history` (up to 100 registrations), `ratings`, `canChangeRole` (disabled with a reason for your own account and the last admin) and `version`."
+      description: "AdminPlayerDto: the row plus phone, birthday, area, chessComHandle, fideId (null when not provided), `visibleFields`, `history` (up to 100 registrations; `historyTruncated` is true when more exist), `ratings` (each with `rd`), `registered` (confirmed registrations of past events, the attendance denominator), `nextEvent` {id, slug, title, startsAt} (soonest future confirmed registration, else null), the row additions `rating` and `attendancePct`, `canChangeRole` (disabled with a reason for your own account and the last admin) and `version`. Each call writes audit action `player.view_private` (actor and player id only, no PII; at most one row per admin and player per 5 minutes); if the audit write fails the record is not returned. Response is `Cache-Control: no-store`."
       parameters:
         - {name: playerId, in: path, required: true, schema: {type: string, format: uuid}}
       responses:
@@ -3545,7 +3424,7 @@ components:
         key: {type: string, enum: [home, community, nav, footer, meta]}
         version: {type: integer}
         updatedAt: {type: string, format: date-time}
-        content: {type: object, description: 'Public section shape: every `{collection: key}` reference is resolved to {mode, autoplay, intervalMs, items}. Drafts are still STORED and ACCEPTED (S03) with the reference form.'}
+        content: {type: object, description: 'Public section shape: every `{collection: key}` reference is resolved to {mode, autoplay, intervalMs, items}, plus admin-only `assetIds` and `assets` (asset summaries) on each slot.'}
     AdminCmsLastChange:
       type: object
       nullable: true
@@ -3565,15 +3444,6 @@ components:
         lastChange: {$ref: '#/components/schemas/AdminCmsLastChange'}
         publishedAt: {type: string, format: date-time, nullable: true}
         publishedVersion: {type: integer, nullable: true}
-        collections:
-          type: array
-          description: Media collections referenced by the working copy
-          items:
-            type: object
-            properties:
-              id: {type: string}
-              key: {type: string}
-              name: {type: string}
         updatedAt: {type: string, format: date-time}
         updatedBy: {$ref: '#/components/schemas/AdminPerson'}
         changeSummary: {type: string, nullable: true}
@@ -3603,7 +3473,7 @@ components:
     AdminStoryInput:
       type: object
       additionalProperties: false
-      description: 'Create requires kind and title; `slug` is optional (a free slug is proposed from the title). On PATCH a draft may blank title, eyebrow and dek; `publishedOn` and `readingMinutes` accept null (no change). `collectionId` (media collection, integer key as a string, nullable) is what the web sends; `coverAssetId` is the legacy cover field.'
+      description: 'Create requires kind and title; `slug` is optional (a free slug is proposed from the title). On PATCH a draft may blank title, eyebrow and dek; `publishedOn` and `readingMinutes` accept null (no change). `media` is the story private gallery `{assetIds, autoplay?, intervalMs?}` (max 50; mode derived). `coverAssetId` is the legacy cover field. Publish needs alt text (or decorative) on every gallery image.'
       properties:
         slug: {type: string, minLength: 3, maxLength: 80, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'}
         kind: {type: string, enum: [club_notes, event_notes, rivalries]}
@@ -3614,7 +3484,13 @@ components:
         readingMinutes: {type: integer, minimum: 1, maximum: 120}
         featured: {type: boolean}
         coverAssetId: {type: string, format: uuid, nullable: true}
-        collectionId: {type: string, pattern: '^[0-9]+$', nullable: true, description: Story media collection}
+        media:
+          type: object
+          additionalProperties: false
+          properties:
+            assetIds: {type: array, maxItems: 50, items: {type: string, format: uuid}}
+            autoplay: {type: boolean, default: false}
+            intervalMs: {type: integer, minimum: 2000, maximum: 60000, default: 5000}
         body:
           type: array
           maxItems: 200
@@ -3641,7 +3517,15 @@ components:
         publishedOn: {type: string, format: date}
         readingMinutes: {type: integer}
         featured: {type: boolean}
-        collectionId: {type: string, nullable: true, description: 'Detail only. The story media collection (integer key as a string) or null.'}
+        media:
+          type: object
+          description: 'Detail only. The story private gallery.'
+          properties:
+            assetIds: {type: array, items: {type: string, format: uuid}}
+            assets: {type: array, items: {$ref: '#/components/schemas/AdminAssetSummary'}}
+            mode: {type: string, enum: [static, carousel]}
+            autoplay: {type: boolean}
+            intervalMs: {type: integer}
         lastChange: {$ref: '#/components/schemas/AdminCmsLastChange'}
         coverAssetId: {type: string, format: uuid, nullable: true}
         slugLocked: {type: boolean, description: True once the story has been published}
@@ -3700,7 +3584,7 @@ components:
         status:
           type: string
           enum: [draft, published, archived]
-          description: 'archived if archived; else published when referenced by any published entity (non-draft event, published story or testimonial, a collection shown by those or by a published site section); else draft'
+          description: 'archived if archived; else published when referenced by any published entity (non-draft event, published story or testimonial, a gallery shown by those or by a published site section); else draft'
         archivedAt: {type: string, format: date-time, nullable: true}
         missingAlt: {type: boolean}
         contentType: {type: string, enum: [image/jpeg, image/png, image/webp, image/avif], description: 'Stored type; rows without one (seeded) are read from the src extension'}
@@ -3713,8 +3597,8 @@ components:
           items:
             type: object
             properties:
-              kind: {type: string, enum: [event, story, testimonial, site_section, collection]}
-              id: {type: string, description: 'Entity id; the section key for site_section; the integer id string for collection'}
+              kind: {type: string, enum: [event, story, testimonial, site_section]}
+              id: {type: string, description: 'Entity id; the section key for site_section'}
               label: {type: string}
               field: {type: string}
         uploadedBy:
@@ -3735,40 +3619,16 @@ components:
               code: {type: string, enum: [ALT_MISSING]}
               field: {type: string}
               message: {type: string}
-    AdminMediaCollection:
+    AdminAssetSummary:
       type: object
-      description: Web `mediaCollectionAdminSchema`. `id` stays an integer primary key sent as a decimal string (web relaxes UUID to string, FE task)
       properties:
-        id: {type: string, description: Integer key sent as a string}
-        key: {type: string}
-        name: {type: string}
-        mode: {type: string, enum: [static, carousel]}
-        autoplay: {type: boolean}
-        intervalMs: {type: integer}
-        usageCount: {type: integer, description: Events (media or gallery) and published site sections that show it}
-        version: {type: integer}
-        updatedAt: {type: string, format: date-time}
-        lastChange:
-          type: object
-          nullable: true
-          properties:
-            by: {type: object, properties: {id: {type: string, format: uuid}, name: {type: string}}}
-            at: {type: string, format: date-time}
-            summary: {type: string, nullable: true}
-        itemCount: {type: integer}
-        items:
-          type: array
-          description: Ordered asset summaries; absent in the list response
-          items:
-            type: object
-            properties:
-              id: {type: string, format: uuid}
-              src: {type: string}
-              width: {type: integer}
-              height: {type: integer}
-              alt: {type: string, nullable: true}
-              decorative: {type: boolean}
-              focal: {type: object, properties: {x: {type: number}, y: {type: number}}}
+        id: {type: string, format: uuid}
+        src: {type: string}
+        width: {type: integer}
+        height: {type: integer}
+        alt: {type: string, nullable: true}
+        decorative: {type: boolean}
+        focal: {type: object, properties: {x: {type: number}, y: {type: number}}}
     Blocker:
       type: object
       required: [code, reason]
@@ -3872,9 +3732,15 @@ components:
             timeControl: {type: string}
         media:
           type: object
+          description: 'The event private gallery (PLAN-010). `mode` is derived from the number of assets.'
           properties:
-            collectionId: {type: string, pattern: '^[0-9]+$', nullable: true, description: Media collection id (integer key sent as a string)}
+            assetIds: {type: array, items: {type: string, format: uuid}}
+            assets:
+              type: array
+              items: {$ref: '#/components/schemas/AdminAssetSummary'}
             mode: {type: string, enum: [static, carousel]}
+            autoplay: {type: boolean}
+            intervalMs: {type: integer, minimum: 2000, maximum: 60000}
         communications:
           type: object
           properties:

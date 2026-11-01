@@ -79,6 +79,8 @@ export function toWriteValues(
       out[field] = withoutBlankRows(field, value)
       continue
     }
+    // Media: `assets` and `mode` are read-only (the server derives them); only the list and autoplay settings travel.
+    if (key === 'media' && field !== 'assetIds' && field !== 'autoplay' && field !== 'intervalMs') continue
     if (key === 'payment' && field === 'currency') continue
     if (key === 'gameSystem' && field === 'pool' && values.rated === false) continue
     out[field] = value

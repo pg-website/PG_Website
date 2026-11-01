@@ -44,6 +44,7 @@ MAX_DIMENSION = 20000
 MAX_PIXELS = 60_000_000
 MAX_PENDING_UPLOADS = 50
 MAX_COLLECTION_ITEMS = 50
+DEFAULT_INTERVAL_MS = 5000
 MAX_USED_BY = 20
 _CONTROL = re.compile(r'[\x00-\x1f\x7f-\x9f/\\]')
 
@@ -184,7 +185,7 @@ def published_asset_ids() -> set:
 
 
 def usages(asset_ids) -> dict:
-    """asset id -> [{kind, id, label, field}] for collections, events, stories, testimonials and site sections that
+    """asset id -> [{kind, id, label, field}] for events, stories, testimonials and site sections that
     show it (uncapped, de-duplicated). Batched: a fixed number of queries per call, whatever the page size."""
     ids = list(asset_ids)
     out = {i: [] for i in ids}
@@ -201,7 +202,7 @@ def usages(asset_ids) -> dict:
     by_collection = {}
     for item in items:
         c = item.collection
-        add(item.asset_id, {'kind': 'collection', 'id': str(c.pk), 'label': c.name or c.key, 'field': 'items'})
+        # Private galleries are not a user-facing kind (PLAN-010): only the owning entity is reported below.
         by_collection.setdefault(c.pk, []).append(item.asset_id)
     for e in Event.objects.filter(cover_id__in=ids).only('id', 'title', 'cover_id'):
         add(e.cover_id, {'kind': 'event', 'id': str(e.pk), 'label': e.title, 'field': 'cover'})
@@ -216,6 +217,9 @@ def usages(asset_ids) -> dict:
             for cid, field in ((e.media_id, 'media'), (e.archive_gallery_id, 'archiveGallery')):
                 for asset_id in by_collection.get(cid, ()):
                     add(asset_id, {'kind': 'event', 'id': str(e.pk), 'label': e.title, 'field': field})
+        for st in Story.objects.filter(collection_id__in=cols).only('id', 'title', 'collection_id'):
+            for asset_id in by_collection.get(st.collection_id, ()):
+                add(asset_id, {'kind': 'story', 'id': str(st.pk), 'label': st.title, 'field': 'media'})
         keys = {c.key: c.pk for c in MediaCollection.objects.filter(pk__in=cols).only('id', 'key')}
         for section in SiteSection.objects.filter(status='published'):
             for key in set(v.collect_collection_refs(section.content)):
@@ -551,225 +555,157 @@ def _delete_object(key: str) -> None:
         logger.warning('media_object_delete_failed')  # orphaned object only; the record is already gone
 
 
-# ---------------------------------------------------------------- S12
+# ---------------------------------------------------------------- private galleries (PLAN-010)
+#
+# An event, story, event archive or site section shows an ordered list of assets. Internally that list lives in a
+# MediaCollection owned by exactly one owner (owner_kind/owner_ref). It is never shown, named or shared in the admin.
+# The mode is derived: one asset is static, two or more is a carousel.
 
-def collection_usage_counts(collection_ids) -> dict:
-    """collection id -> number of places that show it (events by media/gallery, published site sections by key)."""
-    ids = list(collection_ids)
-    counts = {i: 0 for i in ids}
-    if not ids:
-        return counts
-    for media_id, gallery_id in Event.objects.filter(Q(media_id__in=ids) | Q(archive_gallery_id__in=ids)).values_list(
-            'media_id', 'archive_gallery_id'):
-        for cid in {media_id, gallery_id}:
-            if cid in counts:
-                counts[cid] += 1
-    for cid in Story.objects.filter(collection_id__in=ids).values_list('collection_id', flat=True):
-        counts[cid] += 1
-    keys = {c.key: c.pk for c in MediaCollection.objects.filter(pk__in=ids).only('id', 'key')}
-    for section in SiteSection.objects.filter(status='published'):
-        for key in set(v.collect_collection_refs(section.content)):
-            if key in keys:
-                counts[keys[key]] += 1
-    return counts
+GALLERY_INPUT_KEYS = {'assetIds', 'autoplay', 'intervalMs'}
+GALLERY_ECHO_KEYS = {'mode', 'items', 'assets'}  # read-only keys a client may send back unchanged; ignored
 
 
-def collection_last_changes(collection_ids) -> dict:
-    """collection id -> {by, at, summary} from the newest audit row with an actor (batched)."""
-    from audit.models import AuditLog
-    ids = {str(i): i for i in collection_ids}
-    out = {}
-    if not ids:
-        return out
-    rows = (AuditLog.objects.filter(object_type='media_collection', object_id__in=list(ids), actor__isnull=False)
-            .select_related('actor').order_by('-occurred_at'))
-    for row in rows:
-        pk = ids[row.object_id]
-        if pk not in out:
-            out[pk] = {'by': actor_dto(row.actor), 'at': iso(row.occurred_at), 'summary': None}
-    return out
+def derive_mode(count: int) -> str:
+    return 'carousel' if count >= 2 else 'static'
 
 
-def collection_dto(collection: MediaCollection, *, with_items=True, usage_count=None, last_change=None) -> dict:
-    """Web `mediaCollectionAdminSchema`. `id` stays the integer primary key as a decimal string (web relaxes UUID)."""
-    if usage_count is None:
-        usage_count = collection_usage_counts([collection.pk])[collection.pk]
-    if last_change is None:
-        last_change = collection_last_changes([collection.pk]).get(collection.pk)
-    dto = {
-        'id': str(collection.pk), 'key': collection.key, 'name': collection.name or collection.key,
-        'mode': collection.mode, 'autoplay': collection.autoplay, 'intervalMs': collection.interval_ms,
-        'usageCount': usage_count, 'version': collection.version, 'updatedAt': iso(collection.updated_at),
-        'lastChange': last_change,
-    }
-    if with_items:
-        items = list(collection.items.all())
-        dto['items'] = [asset_summary_dto(i.asset) for i in items]
-        dto['itemCount'] = len(items)
-    return dto
+def parse_asset_ids(raw, path):
+    """-> (ids or None, errors)."""
+    if not isinstance(raw, list) or len(raw) > MAX_COLLECTION_ITEMS:
+        return None, {path: [f'Send a list of at most {MAX_COLLECTION_ITEMS} asset ids.']}
+    ids = []
+    for n, item in enumerate(raw):
+        try:
+            if not isinstance(item, str):
+                raise ValueError
+            ids.append(uuid.UUID(item))
+        except ValueError:
+            return None, {f'{path}.{n}': ['Use a valid asset id.']}
+    if len(set(ids)) != len(ids):
+        return None, {path: ['Each asset can appear once.']}
+    return ids, {}
 
 
-def get_collection(collection_id, *, lock=False) -> MediaCollection:
-    pk = parse_collection_id(collection_id)
-    qs = MediaCollection.objects.all()
-    if lock:
-        qs = qs.select_for_update()
-    collection = qs.filter(pk=pk).first() if pk else None
-    if collection is None:
-        raise NotFound('Media collection not found.')
-    return collection
-
-
-def detail(collection_id) -> MediaCollection:
-    pk = parse_collection_id(collection_id)
-    collection = (MediaCollection.objects.prefetch_related('items__asset').filter(pk=pk).first() if pk else None)
-    if collection is None:
-        raise NotFound('Media collection not found.')
-    return collection
-
-
-def list_collections(params):
-    q = (params.get('q') or '').strip()
-    if len(q) > 100:
-        raise ValidationFailed(fields={'q': ['Use at most 100 characters.']})
-    qs = MediaCollection.objects.all()
-    if q:
-        qs = qs.filter(Q(name__icontains=q) | Q(key__icontains=q))
-    return qs.order_by('name', 'id')
-
-
-def _parse_collection(data: dict, *, creating: bool):
-    _unknown(data, {'version', 'name', 'mode', 'autoplay', 'intervalMs', 'items'})
-    errors, out = {}, {}
-    version = None if creating else _version(errors, data)
-    if 'name' in data:
-        out['name'] = _text(errors, 'name', data['name'], 120, min_len=1)
-    elif creating:
-        errors['name'] = ['This is required.']
-    if 'mode' in data:
-        if data['mode'] not in ('static', 'carousel'):
-            errors['mode'] = ['Choose static or carousel.']
+def parse_gallery(raw: dict, path: str):
+    """Parse `{assetIds?, autoplay?, intervalMs?}` -> (out, errors). out keys: asset_ids, autoplay, interval_ms."""
+    out, errors = {}, {}
+    if 'assetIds' in raw:
+        ids, errs = parse_asset_ids(raw['assetIds'], f'{path}.assetIds')
+        errors.update(errs)
+        if ids is not None:
+            out['asset_ids'] = ids
+    if 'autoplay' in raw:
+        if not isinstance(raw['autoplay'], bool):
+            errors[f'{path}.autoplay'] = ['Send true or false.']
         else:
-            out['mode'] = data['mode']
-    if 'autoplay' in data:
-        if not isinstance(data['autoplay'], bool):
-            errors['autoplay'] = ['Send true or false.']
+            out['autoplay'] = raw['autoplay']
+    if 'intervalMs' in raw:
+        if not _is_int(raw['intervalMs']) or not 2000 <= raw['intervalMs'] <= 60000:
+            errors[f'{path}.intervalMs'] = ['Use 2000 to 60000 milliseconds.']
         else:
-            out['autoplay'] = data['autoplay']
-    if 'intervalMs' in data:
-        if not _is_int(data['intervalMs']) or not 2000 <= data['intervalMs'] <= 60000:
-            errors['intervalMs'] = ['Use 2000 to 60000 milliseconds.']
-        else:
-            out['interval_ms'] = data['intervalMs']
-    if 'items' in data:
-        raw = data['items']
-        ids = []
-        if not isinstance(raw, list) or len(raw) > MAX_COLLECTION_ITEMS:
-            errors['items'] = [f'Send a list of at most {MAX_COLLECTION_ITEMS} items.']
-        else:
-            for n, item in enumerate(raw):
-                if not isinstance(item, dict) or set(item) != {'assetId'} or not isinstance(item['assetId'], str):
-                    errors[f'items.{n}'] = ['Send {"assetId": "..."}.']
-                    break
-                try:
-                    ids.append(uuid.UUID(item['assetId']))
-                except ValueError:
-                    errors[f'items.{n}.assetId'] = ['Use a valid asset id.']
-                    break
-            if 'items' not in errors and not any(k.startswith('items.') for k in errors) and len(set(ids)) != len(ids):
-                errors['items'] = ['Each asset can appear once.']
-        out['items'] = ids
-    if not errors and not creating and not out:
-        errors['form'] = ['Send at least one field to change.']
-    if errors:
-        raise ValidationFailed(fields=errors)
-    return version, out
+            out['interval_ms'] = raw['intervalMs']
+    return out, errors
 
 
-def parse_collection_create(data):
-    return _parse_collection(data, creating=True)[1]
-
-
-def parse_collection_patch(data):
-    return _parse_collection(data, creating=False)
-
-
-def _check_items(ids, current_ids) -> None:
+def check_assets(ids, current_ids, path: str) -> None:
+    """Every asset must exist; an archived asset can stay in a list but cannot be newly added."""
     if not ids:
         return
     found = {a.pk: a for a in MediaAsset.objects.filter(pk__in=ids).only('id', 'archived')}
-    errors = []
+    errors = {}
     for n, i in enumerate(ids):
         asset = found.get(i)
         if asset is None:
-            errors.append((n, 'This asset does not exist.'))
+            errors[f'{path}.{n}'] = ['This asset does not exist.']
         elif asset.archived and i not in current_ids:
-            errors.append((n, 'Archived assets cannot be added.'))
+            errors[f'{path}.{n}'] = ['Archived assets cannot be added.']
+        if len(errors) >= 10:
+            break
     if errors:
-        raise ValidationFailed(fields={f'items.{n}.assetId': [m] for n, m in errors[:10]})
+        raise ValidationFailed(fields=errors)
+
+
+def gallery_asset_ids(collection) -> list:
+    if collection is None:
+        return []
+    return list(MediaCollectionItem.objects.filter(collection=collection).order_by('order', 'id')
+                .values_list('asset_id', flat=True))
+
+
+def gallery_dto(collection) -> dict:
+    """Admin read of a private gallery: ordered ids, asset summaries and the derived mode."""
+    if collection is None:
+        return {'assetIds': [], 'assets': [], 'mode': 'static', 'autoplay': False, 'intervalMs': DEFAULT_INTERVAL_MS}
+    if 'items' in getattr(collection, '_prefetched_objects_cache', {}):
+        assets = [i.asset for i in collection.items.all()]
+    else:
+        assets = [i.asset for i in collection.items.select_related('asset')]
+    return {'assetIds': [str(a.pk) for a in assets], 'assets': [asset_summary_dto(a) for a in assets],
+            'mode': derive_mode(len(assets)), 'autoplay': collection.autoplay, 'intervalMs': collection.interval_ms}
+
+
+def missing_alt_in(collection_ids) -> bool:
+    """True when any image in these galleries has no alt text and is not marked decorative (publish blocker)."""
+    ids = list(collection_ids)
+    return bool(ids) and MediaCollectionItem.objects.filter(
+        collection_id__in=ids, asset__decorative=False, asset__alt='').exists()
 
 
 def _replace_items(collection: MediaCollection, ids) -> None:
-    # Raw delete + bulk_create bypass the per-row signals: one revalidation burst comes from the collection save.
+    # Raw delete + bulk_create bypass the per-row signals: the revalidation burst comes from the collection save.
     MediaCollectionItem.objects.filter(collection=collection)._raw_delete(using=MediaCollectionItem.objects.db)
     try:
         MediaCollectionItem.objects.bulk_create(
             [MediaCollectionItem(collection=collection, asset_id=i, order=n) for n, i in enumerate(ids)])
     except IntegrityError:
-        raise ValidationFailed(fields={'items': ['One of the assets no longer exists.']}) from None
+        raise ValidationFailed(fields={'media.assetIds': ['One of the assets no longer exists.']}) from None
 
 
-def _new_key(name: str) -> str:
-    base = re.sub(r'[^a-z0-9]+', '-', unicodedata.normalize('NFKD', name).encode('ascii', 'ignore').decode().lower())
-    base = base.strip('-')[:80] or 'collection'
-    key = base
-    while MediaCollection.objects.filter(key=key).exists():
-        key = f'{base[:73]}-{secrets.token_hex(3)}'
-    return key
+def _private_key(owner_kind: str) -> str:
+    base = owner_kind.replace('_', '-')
+    while True:
+        key = f'{base}-{secrets.token_hex(6)}'
+        if not MediaCollection.objects.filter(key=key).exists():
+            return key
 
 
-def create_collection(request, parsed: dict) -> MediaCollection:
-    ids = parsed.get('items', [])
-    _check_items(ids, set())
-    with transaction.atomic():
-        collection = MediaCollection(
-            key=_new_key(parsed['name']), name=parsed['name'], mode=parsed.get('mode', 'static'),
-            autoplay=parsed.get('autoplay', False), interval_ms=parsed.get('interval_ms', 6000))
+def create_gallery(owner_kind: str, owner_ref: str, ids, autoplay=False, interval_ms=DEFAULT_INTERVAL_MS,
+                   path='media.assetIds') -> MediaCollection:
+    check_assets(ids, set(), path)
+    collection = MediaCollection(key=_private_key(owner_kind), name='', mode=derive_mode(len(ids)),
+                                 autoplay=autoplay, interval_ms=interval_ms, owner_kind=owner_kind,
+                                 owner_ref=str(owner_ref))
+    try:
+        collection.save()
+    except DjangoValidationError as exc:
+        raise ValidationFailed(fields={'form': [str(m) for m in sum(exc.message_dict.values(), [])][:3]}) from None
+    _replace_items(collection, ids)
+    return collection
+
+
+def set_gallery(owner_kind: str, owner_ref, current, parsed: dict, path='media.assetIds') -> MediaCollection:
+    """Create or update the owner's private gallery from parsed `{asset_ids?, autoplay?, interval_ms?}`.
+    `current` is the owner's gallery or None. Call inside the owner's transaction, owner row locked. The collection
+    save bumps its version and emits one revalidation row per referencing published entity (content.signals)."""
+    ids = parsed.get('asset_ids')
+    if current is None:
+        return create_gallery(owner_kind, owner_ref, ids or [], parsed.get('autoplay', False),
+                              parsed.get('interval_ms', DEFAULT_INTERVAL_MS), path)
+    cur_ids = gallery_asset_ids(current)
+    changed = False
+    if ids is not None and ids != cur_ids:
+        check_assets(ids, set(cur_ids), path)
+        _replace_items(current, ids)
+        changed = True
+    new_count = len(cur_ids) if ids is None else len(ids)
+    for attr, val in (('autoplay', parsed.get('autoplay')), ('interval_ms', parsed.get('interval_ms')),
+                      ('mode', derive_mode(new_count))):
+        if val is not None and getattr(current, attr) != val:
+            setattr(current, attr, val)
+            changed = True
+    if changed:
         try:
-            collection.save()
-        except (DjangoValidationError, IntegrityError):
-            raise ValidationFailed(fields={'name': ['Choose a different name.']}) from None
-        _replace_items(collection, ids)
-        audit.write(request, action='media.collection.create', object_type='media_collection', object_id=collection.pk,
-                    after={'name': collection.name, 'mode': collection.mode, 'items': [str(i) for i in ids]})
-    return detail(collection.pk)
-
-
-def update_collection(request, collection_id, version, parsed: dict) -> MediaCollection:
-    pk = get_collection(collection_id).pk
-    ids = parsed.get('items')
-    with transaction.atomic():
-        collection = get_collection(pk, lock=True)
-        if version is not None and version != collection.version:
-            raise VersionConflict()
-        before, after = {}, {}
-        for attr in ('name', 'mode', 'autoplay', 'interval_ms'):
-            if attr in parsed and getattr(collection, attr) != parsed[attr]:
-                before[attr], after[attr] = getattr(collection, attr), parsed[attr]
-                setattr(collection, attr, parsed[attr])
-        current = list(MediaCollectionItem.objects.filter(collection=collection).order_by('order', 'id')
-                       .values_list('asset_id', flat=True))
-        items_changed = ids is not None and ids != current
-        if items_changed:
-            _check_items(ids, set(current))
-            before['items'], after['items'] = [str(i) for i in current], [str(i) for i in ids]
-        if after:
-            if items_changed:
-                _replace_items(collection, ids)
-            try:
-                collection.save()  # bumps version; content.signals emits one row per referencing entity
-            except DjangoValidationError as exc:
-                raise ValidationFailed(fields={'form': [str(m) for m in sum(exc.message_dict.values(), [])][:3]}) from None
-            audit.write(request, action='media.collection.update', object_type='media_collection',
-                        object_id=collection.pk, before=before, after=after)
-    return detail(pk)
+            current.save()
+        except DjangoValidationError as exc:
+            raise ValidationFailed(fields={'form': [str(m) for m in sum(exc.message_dict.values(), [])][:3]}) from None
+    return current

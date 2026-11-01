@@ -1,53 +1,55 @@
 'use client'
 
+import { useWatch } from 'react-hook-form'
 import { FormField } from '@/components/ui/form/FormField'
-import { Select } from '@/components/ui/form/Select'
 import { Heading } from '@/components/ui/Heading'
 import { useStepForm } from '@/features/event-builder/context'
-import { CollectionField } from '@/features/event-builder/fields/CollectionField'
 import type { BuilderStepProps } from '@/features/event-builder/types'
+import { AssetListField } from '@/features/media/AssetListField'
 import type { MediaStep as MediaValues } from '@/lib/api/types/admin/event-builder'
-import { MEDIA_MODES } from '@/lib/api/types/media'
 
-// Builder step 6 (FE-28): the event's media collection (S12) and how it is shown. Zero images shows the placeholder,
-// one image is static (rendering rules).
-
-const MODE_LABELS: Readonly<Record<MediaValues['mode'], string>> = {
-  static: 'Static (first image)',
-  carousel: 'Carousel',
-}
-const MODE_OPTIONS = MEDIA_MODES.map((value) => ({ value, label: MODE_LABELS[value] }))
+// Builder step 6: the event's images (PLAN-010). An ordered list of assets; the first is the cover. One image is
+// static, two or more is a carousel (derived by the server, never chosen here).
 
 export function MediaStep({ dataKey }: BuilderStepProps) {
   const form = useStepForm<MediaValues>(dataKey ?? 'media')
-  const { control } = form
+  const { control, setValue } = form
+  const assets = useWatch({ control, name: 'assets' })
+  const autoplay = useWatch({ control, name: 'autoplay' })
+  const intervalMs = useWatch({ control, name: 'intervalMs' })
 
   return (
     <div className="grid min-w-0 gap-6">
-        <section aria-labelledby="media-collection" className="grid min-w-0 gap-4">
-          <Heading level={2} size="card" id="media-collection">
-            Images
-          </Heading>
-          <CollectionField control={control} />
-          <FormField
-            control={control}
-            name="mode"
-            label="Display"
-            hint="A carousel needs two or more images; one image always shows static."
-          >
-            {(field, id) => (
-              <Select
-                id={id}
-                ref={field.ref}
-                name={field.name}
-                value={field.value}
-                onValueChange={field.onChange}
-                onBlur={field.onBlur}
-                options={MODE_OPTIONS}
-              />
-            )}
-          </FormField>
-        </section>
+      <section aria-labelledby="media-images" className="grid min-w-0 gap-4">
+        <Heading level={2} size="card" id="media-images">
+          Images
+        </Heading>
+        <p className="font-ui text-sm text-muted">
+          Optional. The first image is the cover. Every image needs alt text (or marked decorative) before the event can
+          be published.
+        </p>
+        <FormField control={control} name="assetIds" label="Event images" group optionalLabel>
+          {(field) => (
+            <AssetListField
+              label="Event images"
+              hint="One image shows static; two or more show as a carousel."
+              value={field.value}
+              assets={assets}
+              onChange={(ids) => {
+                field.onChange(ids)
+              }}
+              autoplay={{
+                autoplay,
+                intervalMs,
+                onChange: (next) => {
+                  setValue('autoplay', next.autoplay, { shouldDirty: true })
+                  setValue('intervalMs', next.intervalMs, { shouldDirty: true })
+                },
+              }}
+            />
+          )}
+        </FormField>
+      </section>
     </div>
   )
 }

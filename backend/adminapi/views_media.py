@@ -1,4 +1,4 @@
-"""Admin media (contract 3.7: S07-S12). Default deny: every view is an AdminView."""
+"""Admin media (contract 3.7: S07-S11; the collection endpoints S12 were removed by PLAN-010). Default deny: every view is an AdminView."""
 from __future__ import annotations
 
 from core.responses import ok
@@ -45,30 +45,3 @@ class AssetDetailView(AdminView):  # S10, S11 (and a read of one asset)
     def delete(self, request, asset_id):
         svc.delete_asset(request, asset_id)
         return ok()
-
-
-class CollectionsView(AdminView):  # S12
-    def get(self, request):
-        qs = svc.list_collections(request.query_params).prefetch_related('items__asset')
-        paginator = AdminPagePagination()
-        page = paginator.paginate_queryset(qs, request, view=self)
-        counts = svc.collection_usage_counts([c.pk for c in page])
-        changes = svc.collection_last_changes([c.pk for c in page])
-        rows = []
-        for c in page:
-            # Items are included: the web row is the full admin collection (prefetched, so no per-row query).
-            rows.append(svc.collection_dto(c, usage_count=counts[c.pk], last_change=changes.get(c.pk)))
-        return paginator.get_paginated_response(rows)
-
-    def post(self, request):
-        parsed = svc.parse_collection_create(svc.object_body(request))
-        return ok(svc.collection_dto(svc.create_collection(request, parsed)), status=201)
-
-
-class CollectionDetailView(AdminView):  # S12
-    def get(self, request, collection_id):
-        return ok(svc.collection_dto(svc.detail(collection_id)))
-
-    def patch(self, request, collection_id):
-        version, parsed = svc.parse_collection_patch(svc.object_body(request))
-        return ok(svc.collection_dto(svc.update_collection(request, collection_id, version, parsed)))

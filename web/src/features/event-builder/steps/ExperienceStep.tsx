@@ -14,7 +14,7 @@ import { FaqEditor } from '@/features/event-builder/fields/FaqEditor'
 import { HighlightsEditor } from '@/features/event-builder/fields/HighlightsEditor'
 import { LogisticsEditor } from '@/features/event-builder/fields/LogisticsEditor'
 import { TagsField } from '@/features/event-builder/fields/TagsField'
-import { experienceStepSchema, type ExperienceStep as ExperienceValues } from '@/lib/api/types/admin/event-builder'
+import { type ExperienceStep as ExperienceValues } from '@/lib/api/types/admin/event-builder'
 import type { ExperienceMode } from '@/lib/api/types/admin/event-builder'
 
 // Builder step 2, Experience (EV-09, screen 39). Adds mode choice cards (Hosted social / Competitive),
@@ -41,7 +41,7 @@ const MODE_OPTIONS: readonly ModeCardOption[] = [
 ]
 
 export function ExperienceStep() {
-  const form = useStepForm<ExperienceValues>('experience', { schema: experienceStepSchema })
+  const form = useStepForm<ExperienceValues>('experience')
   const { control } = form
   const groupId = useId()
 

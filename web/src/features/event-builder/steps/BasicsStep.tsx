@@ -1,6 +1,7 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
+import { useWatch } from 'react-hook-form'
 import { FormField } from '@/components/ui/form/FormField'
 import { Input } from '@/components/ui/form/Input'
 import { Select } from '@/components/ui/form/Select'
@@ -9,22 +10,12 @@ import { useBuilderSelector, useStepForm } from '@/features/event-builder/contex
 import { DateTimeInput } from '@/features/event-builder/fields/DateTimeInput'
 import { EventTypeField } from '@/features/event-builder/fields/EventTypeField'
 import { SlugField } from '@/features/event-builder/fields/SlugField'
-import { basicsStepSchema, type BasicsStep as BasicsValues } from '@/lib/api/types/admin/event-builder'
+import { type BasicsStep as BasicsValues } from '@/lib/api/types/admin/event-builder'
 import { proposeSlug } from '@/lib/api/types/admin/slug'
 import { authoringSlugSchema } from '@/lib/api/types/primitives'
 import { EVENT_AUDIENCES, type EventAudience } from '@/lib/api/types/event-state'
-import { parseInstant } from '@/lib/format/instant'
-
 // Builder step 1, Basics (FE-26, TASK-078, screen 38). Title, slug (suggested from the title, checked with E05, locked
 // after first publish), type (E06), schedule (native pickers, IST), venue and audience.
-
-const basicsFormSchema = basicsStepSchema.superRefine((value, ctx) => {
-  const start = value.startsAt === null ? null : parseInstant(value.startsAt)
-  const end = value.endsAt === null ? null : parseInstant(value.endsAt)
-  if (start !== null && end !== null && end <= start) {
-    ctx.addIssue({ code: 'custom', path: ['endsAt'], message: 'The end must be after the start.' })
-  }
-})
 
 const AUDIENCE_LABEL: Record<EventAudience, string> = {
   all_levels: 'All levels',
@@ -34,8 +25,10 @@ const AUDIENCE_LABEL: Record<EventAudience, string> = {
 const AUDIENCE_OPTIONS = EVENT_AUDIENCES.map((value) => ({ value, label: AUDIENCE_LABEL[value] }))
 
 export function BasicsStep() {
-  const form = useStepForm<BasicsValues>('basics', { schema: basicsFormSchema })
+  const form = useStepForm<BasicsValues>('basics')
   const { control } = form
+  const [nowMs] = useState(() => Date.now())
+  const startsAt = useWatch({ control, name: 'startsAt' })
   const eventId = useBuilderSelector((state) => state.server.id)
   const lastProposed = useRef<string | null>(null)
 
@@ -130,23 +123,26 @@ export function BasicsStep() {
           control={control}
           name="startsAt"
           label="Starts"
+          required
           hint="Indian Standard Time. Must not be in the past to publish."
         >
           {(field) => (
             <DateTimeInput
               ref={field.ref}
               name={field.name}
+              min={nowMs}
               value={field.value}
               onChange={field.onChange}
               onBlur={field.onBlur}
             />
           )}
         </FormField>
-        <FormField control={control} name="endsAt" label="Ends" hint="Must be after the start.">
+        <FormField control={control} name="endsAt" label="Ends" required hint="Must be after the start.">
           {(field) => (
             <DateTimeInput
               ref={field.ref}
               name={field.name}
+              min={startsAt ?? nowMs}
               value={field.value}
               onChange={field.onChange}
               onBlur={field.onBlur}

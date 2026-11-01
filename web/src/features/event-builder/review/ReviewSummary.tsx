@@ -79,15 +79,19 @@ export function summarize(server: BuilderDraftDto, pending: PendingPatch): Summa
         game.rated ? 'Rated' : 'Not rated',
         game.pairingMode.replaceAll('_', ' '),
         game.rounds === null ? 'Rounds not set' : `${game.rounds} rounds`,
+        game.timeControl.trim() === '' ? 'Time control not set' : `Time control ${game.timeControl}`,
       ],
     },
     {
       step: 'media',
       label: 'Media',
       facts:
-        media.collectionId === null
+        media.assetIds.length === 0
           ? ['No images (placeholder shown)']
-          : ['Image collection chosen', media.mode === 'carousel' ? 'Carousel' : 'Static (first image)'],
+          : [
+              `${media.assetIds.length} image${media.assetIds.length === 1 ? '' : 's'}`,
+              media.assetIds.length > 1 ? 'Carousel' : 'Static',
+            ],
     },
     {
       step: 'communications',

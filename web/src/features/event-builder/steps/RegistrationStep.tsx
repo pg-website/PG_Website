@@ -88,7 +88,7 @@ export function RegistrationStep({ dataKey }: BuilderStepProps) {
               control={control}
               name="opensAt"
               label="Registration opens"
-              hint="India time (IST). Leave empty to open immediately."
+              hint="India time (IST). Leave empty to open immediately. Must be before registration closes."
             >
               {(field) => (
                 <IstDateTimeInput
@@ -104,7 +104,7 @@ export function RegistrationStep({ dataKey }: BuilderStepProps) {
               control={control}
               name="closesAt"
               label="Registration closes"
-              hint="India time (IST). Leave empty to close at the start."
+              hint="India time (IST). Leave empty to close at the start. Must be after it opens and no later than the event start."
             >
               {(field) => (
                 <IstDateTimeInput

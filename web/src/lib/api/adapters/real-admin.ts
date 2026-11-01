@@ -41,6 +41,24 @@ export interface RealAdminHooks {
   withConditionalStepUp: <T>(run: (stepUpToken: string | undefined) => Promise<T>) => Promise<T>
 }
 
+/**
+ * CMS draft bodies send each image slot as `media: { assetIds, autoplay, intervalMs }` (S03, PLAN-010). A slot is any
+ * object with an `items` array plus `mode`; everything else passes through unchanged.
+ */
+function toDraftContent(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(toDraftContent)
+  if (typeof value !== 'object' || value === null) return value
+  const record = value as Record<string, unknown>
+  if (Array.isArray(record.items) && 'mode' in record && 'autoplay' in record) {
+    return {
+      ...(Array.isArray(record.assetIds) ? { assetIds: record.assetIds } : {}),
+      autoplay: record.autoplay,
+      intervalMs: record.intervalMs,
+    }
+  }
+  return Object.fromEntries(Object.entries(record).map(([k, v]) => [k, toDraftContent(v)]))
+}
+
 /** Admin writes and reads: bearer from the token manager, refresh on 401. */
 function spec(
   method: RequestSpec['method'],
@@ -249,7 +267,7 @@ export function createRealAdminApi(http: ApiRequester, hooks: RealAdminHooks): P
       saveSectionDraft: (input, opts) =>
         http.json(
           spec('PUT', `/admin/cms/sections/${seg(input.key)}/draft`, opts, {
-            body: { version: input.version, content: input.content },
+            body: { version: input.version, content: toDraftContent(input.content) },
           }),
           adminCmsResponses.saveSectionDraft,
         ),
@@ -292,20 +310,6 @@ export function createRealAdminApi(http: ApiRequester, hooks: RealAdminHooks): P
           adminMediaResponses.updateAsset,
         ),
       deleteAsset: (assetId, opts) => http.empty(spec('DELETE', `/admin/media/assets/${seg(assetId)}`, opts)),
-      listCollections: (query, opts) =>
-        http.json(spec('GET', '/admin/media/collections', opts, paged(query)), adminMediaResponses.listCollections),
-      getCollection: (id, opts) =>
-        http.json(spec('GET', `/admin/media/collections/${seg(id)}`, opts), adminMediaResponses.getCollection),
-      createCollection: (input, opts) =>
-        http.json(
-          spec('POST', '/admin/media/collections', opts, { body: input }),
-          adminMediaResponses.createCollection,
-        ),
-      updateCollection: (id, input, opts) =>
-        http.json(
-          spec('PATCH', `/admin/media/collections/${seg(id)}`, opts, { body: input }),
-          adminMediaResponses.updateCollection,
-        ),
     },
 
     stories: {

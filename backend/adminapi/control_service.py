@@ -20,7 +20,7 @@ from django.utils.dateparse import parse_datetime
 import audit
 from accounts.models import User
 from audit.models import AuditLog
-from content.models import Event, MediaCollection
+from content.models import Event
 from core.errors import EventNotFound, NotFound, RegistrationNotConfirmed, ValidationFailed, VersionConflict
 from core.responses import iso
 from payments import services as pay_services
@@ -32,7 +32,7 @@ from registrations.models import Pairing, Registration, Round
 
 from . import event_builder as eb
 from . import event_service as svc
-from .media_service import parse_collection_id
+from . import media_service as ms_
 from .permissions import require_step_up
 
 ZERO_UUID = str(uuid.UUID(int=0))
@@ -606,7 +606,7 @@ def recap_dto(event: Event) -> dict:
         last = {'by': {'id': str(event.updated_by_id), 'name': (event.updated_by.name or 'Admin')[:80]},
                 'at': iso(event.updated_at), 'summary': event.last_change_summary or None}
     return {'eventId': str(event.pk), 'recap': event.recap or '',
-            'collectionId': str(event.archive_gallery_id) if event.archive_gallery_id else None,
+            'assetIds': ms_.gallery_dto(event.archive_gallery if event.archive_gallery_id else None)['assetIds'],
             'archivePublished': event.archive_published, 'archivePublishedAt': iso(event.archive_published_at),
             'canPublishArchive': can, 'version': event.version, 'lastChange': last}
 
@@ -615,25 +615,22 @@ def update_recap(request, event_id, data) -> Event:
     if not isinstance(data, dict):
         raise ValidationFailed(fields={'form': ['Send a JSON object.']})
     errors = {str(k)[:60]: ['This field cannot be changed here.']
-              for k in data if k not in ('version', 'recap', 'collectionId', 'publishArchive')}
+              for k in data if k not in ('version', 'recap', 'assetIds', 'publishArchive')}
     version = data.get('version')
     if not isinstance(version, int) or isinstance(version, bool) or version < 0:
         errors['version'] = ['Send the version you loaded.']
     recap = data.get('recap')
     if 'recap' in data and (not isinstance(recap, str) or len(recap.strip()) > 4000):
         errors['recap'] = ['Use at most 4000 characters.']
-    collection = None
-    if 'collectionId' in data and data['collectionId'] is not None:
-        collection = parse_collection_id(data['collectionId'])  # collection ids are integer keys (BE-07)
-        if collection is None:
-            errors['collectionId'] = ['Use a valid id.']
+    asset_ids = None
+    if 'assetIds' in data:
+        asset_ids, id_errors = ms_.parse_asset_ids(data['assetIds'], 'assetIds')
+        errors.update(id_errors)
     publish = data.get('publishArchive')
     if 'publishArchive' in data and not isinstance(publish, bool):
         errors['publishArchive'] = ['Choose true or false.']
     if errors:
         raise ValidationFailed(fields=errors)
-    if collection is not None and not MediaCollection.objects.filter(pk=collection).exists():
-        raise ValidationFailed(fields={'collectionId': ['This media collection does not exist.']})
     control_event(event_id)
     with transaction.atomic():
         event = svc._locked_event(event_id)
@@ -645,12 +642,13 @@ def update_recap(request, event_id, data) -> Event:
         if 'recap' in data and recap.strip() != event.recap:
             before['recap'], after['recap'] = f'{len(event.recap)} characters', f'{len(recap.strip())} characters'
             event.recap = recap.strip()
-        if 'collectionId' in data and data['collectionId'] is not None and collection != event.archive_gallery_id:
-            before['collectionId'], after['collectionId'] = str(event.archive_gallery_id or ''), str(collection)
-            event.archive_gallery_id = collection
-        elif 'collectionId' in data and data['collectionId'] is None and event.archive_gallery_id is not None:
-            before['collectionId'], after['collectionId'] = str(event.archive_gallery_id), ''
-            event.archive_gallery_id = None
+        if asset_ids is not None:
+            current = event.archive_gallery if event.archive_gallery_id else None
+            cur_ids = ms_.gallery_asset_ids(current)
+            if asset_ids != cur_ids:
+                before['assetIds'], after['assetIds'] = [str(i) for i in cur_ids], [str(i) for i in asset_ids]
+                gallery = ms_.set_gallery('event_archive', event.pk, current, {'asset_ids': asset_ids}, 'assetIds')
+                event.archive_gallery = gallery
         action = 'event.recap_update'
         if publish is not None and publish != event.archive_published:
             before['archivePublished'], after['archivePublished'] = event.archive_published, publish

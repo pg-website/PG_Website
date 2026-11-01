@@ -57,7 +57,7 @@ def next_up(user: User) -> dict | None:
         book = IdentityBook({p.black_id if is_white else p.white_id}, pool_of(event))
         pairing = {'round': ctx.current.number, 'board': p.board, 'colour': 'white' if is_white else 'black',
                    'opponent': book.get(p.black_id if is_white else p.white_id)}
-    return {'registrationId': str(reg.pk), 'event': event_link(event), 'venue': venue_text(event),
+    return {'registrationId': str(reg.pk), 'event': {**event_link(event), 'cover': event_cover(event)}, 'venue': venue_text(event),
             'nextAction': room.next_action(ctx), 'pairing': pairing}
 
 

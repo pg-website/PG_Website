@@ -6,6 +6,7 @@ Provider calls (refund execution) run only after the transaction commits (contra
 from __future__ import annotations
 
 import logging
+import uuid
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
@@ -24,6 +25,7 @@ from registrations import services as reg_services
 from registrations.models import Registration
 
 from . import event_builder as eb
+from . import media_service as ms
 from .permissions import require_step_up
 
 logger = logging.getLogger('pg.adminapi')
@@ -59,7 +61,7 @@ MODEL_TO_BUILDER = {
     'price_paise': 'payment.pricePaise', 'refund_window_hours': 'payment.refundWindowHours',
     'hold_minutes': 'payment.holdMinutes', 'rated': 'gameSystem.rated', 'rating_pool': 'gameSystem.pool',
     'pairing_mode': 'gameSystem.pairingMode', 'rounds_planned': 'gameSystem.rounds',
-    'time_control': 'gameSystem.timeControl', 'media': 'media.collectionId', 'media_mode': 'media.mode',
+    'time_control': 'gameSystem.timeControl', 'media': 'media.assetIds', 'media_mode': 'media.assetIds',
     'communications': 'communications.triggers', '__all__': 'form',
 }
 
@@ -160,14 +162,26 @@ def _apply(event: Event, step: str, field: str, value) -> None:
         setattr(event, {'rated': 'rated', 'pool': 'rating_pool', 'pairingMode': 'pairing_mode',
                         'rounds': 'rounds_planned', 'timeControl': 'time_control'}[field], value)
     elif step == 'media':
-        if field == 'collectionId':
-            event.media_id = value
-        else:
-            event.media_mode = value
+        pass  # applied once for the whole step by _apply_media
     elif step == 'communications':
         merged = {t: bool(((event.communications or {}).get('triggers') or {}).get(t, True)) for t in eb.TRIGGERS}
         merged.update(value)
         event.communications = {'triggers': merged, 'channels': list(eb.CHANNELS)}
+
+
+def _apply_media(event: Event, fields: dict) -> None:
+    """Create or update the event's private gallery; the mode is derived from the asset count."""
+    parsed = {}
+    if 'assetIds' in fields:
+        parsed['asset_ids'] = [uuid.UUID(i) for i in fields['assetIds']]
+    if 'autoplay' in fields:
+        parsed['autoplay'] = fields['autoplay']
+    if 'intervalMs' in fields:
+        parsed['interval_ms'] = fields['intervalMs']
+    current = event.media if event.media_id else None
+    gallery = ms.set_gallery('event', event.pk, current, parsed)
+    event.media = gallery
+    event.media_mode = gallery.mode
 
 
 def update_event(request, event_id, version: int, parsed: dict) -> Event:
@@ -195,17 +209,12 @@ def update_event(request, event_id, version: int, parsed: dict) -> Event:
                     raise ValidationFailed(fields={'gameSystem.pool': ['Only a rated event has a rating pool.']})
                 old = _current(dto, step, field)
                 norm = _normalise(new)
-                if step == 'media' and field == 'collectionId' and norm is not None:
-                    norm = str(norm)  # parsed as int, the DTO carries a decimal string
                 if norm != old:
                     changes[(step, field)] = (old, norm)
         if not changes:
             return event
 
         errors = {}
-        if ('media', 'collectionId') in changes and changes[('media', 'collectionId')][1] is not None:
-            if not eb.media_collection_exists(parsed['media']['collectionId']):
-                errors['media.collectionId'] = ['This media collection does not exist.']
         locked = set(eb.locked_fields(event))
         for (step, field), lock in eb.LOCKABLE_PATHS.items():
             if lock in locked and (step, field) in changes:
@@ -226,9 +235,11 @@ def update_event(request, event_id, version: int, parsed: dict) -> Event:
             require_step_up(request)  # the stronger tier: money, capacity and rating rules of a public event
 
         for (step, field) in changes:
-            if step == 'communications':
+            if step in ('communications', 'media'):
                 continue
             _apply(event, step, field, parsed[step][field])
+        if any(step == 'media' for step, _f in changes):
+            _apply_media(event, {f: parsed['media'][f] for (s, f) in changes if s == 'media'})
         if 'communications' in parsed and parsed['communications'].get('triggers'):
             _apply(event, 'communications', 'triggers', parsed['communications']['triggers'])
         if event.rated and not event.rating_pool:

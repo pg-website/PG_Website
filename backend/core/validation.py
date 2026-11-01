@@ -20,6 +20,16 @@ BAD_CHOICE = 'Choose one of the listed options.'
 NOT_EDITABLE = 'This field cannot be changed here.'
 
 PHONE_RE = re.compile(r'^\+?[0-9 ()-]{7,20}$')
+PHONE_CHARS_RE = re.compile(r'[ ()+-]')  # the only non-digits PHONE_RE allows
+PHONE_QUERY_RE = re.compile(r'^\+?[0-9 ()-]+$')
+
+
+def phone_digits(value: str) -> str:
+    """Digits-only form of a phone number. Stored phones keep the user's formatting (PHONE_RE only validates), so
+    comparison always happens on this form on both sides."""
+    return PHONE_CHARS_RE.sub('', value or '')
+
+
 CHESS_HANDLE_RE = re.compile(r'^[A-Za-z0-9_-]{3,25}$')
 FIDE_ID_RE = re.compile(r'^[0-9]{3,12}$')
 ISO_DATE_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
