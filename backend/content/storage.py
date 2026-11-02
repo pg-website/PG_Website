@@ -66,9 +66,10 @@ class SupabaseStorage:
     # -- helpers
     def _headers(self, extra=None):
         key = settings.SUPABASE_SECRET_KEY
-        headers = {'apikey': key}
-        if key.startswith('eyJ'):  # legacy JWT-style service keys are also sent as a bearer token
-            headers['Authorization'] = f'Bearer {key}'
+        # Supabase Storage requires both apikey and Authorization: Bearer for all key formats.
+        # Older service keys were JWT (eyJ…); newer sb_secret_… keys are not JWTs but still
+        # need the Bearer header for storage operations.
+        headers = {'apikey': key, 'Authorization': f'Bearer {key}'}
         headers.update(extra or {})
         return headers
 
