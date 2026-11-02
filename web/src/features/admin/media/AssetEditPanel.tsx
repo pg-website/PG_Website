@@ -117,9 +117,22 @@ export function AssetEditPanel({ asset, onClose, onSaved }: AssetEditPanelProps)
       />
 
       {/* Usage */}
-      <p className="text-sm text-muted">
-        {asset.usageCount} usage{asset.usageCount !== 1 ? 's' : ''}
-      </p>
+      <div className="grid gap-1">
+        <p className="text-sm text-muted">
+          {asset.usageCount === 0
+            ? 'Not used anywhere yet.'
+            : `Used in ${asset.usageCount} place${asset.usageCount !== 1 ? 's' : ''}:`}
+        </p>
+        {asset.usedBy.length > 0 && (
+          <ul className="list-disc pl-5 text-sm text-ink">
+            {asset.usedBy.map((use) => (
+              <li key={`${use.kind}:${use.id}`}>
+                {use.label} <span className="text-muted">({use.kind.replace('_', ' ')})</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       {/* Alt */}
       <Field label="Alt text">
@@ -178,6 +191,16 @@ export function AssetEditPanel({ asset, onClose, onSaved }: AssetEditPanelProps)
           Save
         </Button>
 
+      </div>
+
+      <div className="grid gap-2 border-t border-line-admin pt-4">
+        <p className="font-ui text-sm font-semibold text-ink">Delete asset</p>
+        {asset.usageCount > 0 && (
+          <p className="text-sm text-muted">
+            This image is in use. Remove it from the places listed above, then it can be deleted.
+          </p>
+        )}
+        <div className="flex flex-wrap gap-2">
         {asset.usageCount > 0 && (
           <button
             type="button"
@@ -214,6 +237,7 @@ export function AssetEditPanel({ asset, onClose, onSaved }: AssetEditPanelProps)
             }}
           />
         )}
+        </div>
       </div>
     </aside>
   )
