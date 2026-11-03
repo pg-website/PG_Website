@@ -146,6 +146,97 @@ class SupabaseStorage:
         return f'{self.base}/storage/v1/object/public/{self.bucket}/{key}'
 
 
+class SupabaseS3Storage:
+    """Supabase Storage through its S3-compatible endpoint (presigned PUT uploads, SigV4 access keys).
+
+    Works with the new sb_secret_ keys world because it authenticates with dedicated S3 access keys. Reads stay public
+    through the REST public URL.
+    """
+
+    def __init__(self):
+        import boto3
+        from botocore.config import Config
+        self.base = settings.SUPABASE_URL
+        self.bucket = settings.SUPABASE_MEDIA_BUCKET
+        self._host = urlsplit(settings.SUPABASE_S3_ENDPOINT).hostname
+        self._client = boto3.client(
+            's3', endpoint_url=settings.SUPABASE_S3_ENDPOINT, region_name=settings.SUPABASE_S3_REGION,
+            aws_access_key_id=settings.SUPABASE_S3_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.SUPABASE_S3_SECRET_ACCESS_KEY,
+            config=Config(signature_version='s3v4', s3={'addressing_style': 'path'}, retries={'max_attempts': 2},
+                          connect_timeout=CONNECT_TIMEOUT, read_timeout=READ_TIMEOUT))
+
+    @staticmethod
+    def _code(exc) -> str:
+        return str(getattr(exc, 'response', {}).get('Error', {}).get('Code', ''))
+
+    def create_upload(self, key: str, content_type: str) -> UploadTicket:
+        from botocore.exceptions import BotoCoreError, ClientError
+        try:
+            url = self._client.generate_presigned_url(
+                'put_object', Params={'Bucket': self.bucket, 'Key': key, 'ContentType': content_type},
+                ExpiresIn=settings.MEDIA_UPLOAD_TTL_SECONDS, HttpMethod='PUT')
+        except (BotoCoreError, ClientError) as exc:
+            logger.error('storage_sign_failed exc=%s', type(exc).__name__)
+            raise StorageError('Could not sign an upload.') from None
+        parts = urlsplit(url)
+        if parts.scheme != 'https' or parts.hostname != self._host:  # F-16: only the configured storage host
+            logger.error('storage_sign_host_mismatch')
+            raise StorageError('Unexpected storage response.')
+        return UploadTicket(url=url, method='PUT', headers={'Content-Type': content_type},
+                            expires_at=timezone.now() + timedelta(seconds=settings.MEDIA_UPLOAD_TTL_SECONDS))
+
+    def read(self, key: str, max_bytes: int) -> bytes:
+        from botocore.exceptions import BotoCoreError, ClientError
+        try:
+            response = self._client.get_object(Bucket=self.bucket, Key=key)
+        except ClientError as exc:
+            if self._code(exc) in ('NoSuchKey', '404', 'NotFound', 'NoSuchBucket'):
+                raise ObjectMissing('Object not found.') from None
+            logger.error('storage_read_failed code=%s', self._code(exc))
+            raise StorageError('Could not read the object.') from None
+        except BotoCoreError as exc:
+            logger.warning('storage_network_error exc=%s', type(exc).__name__)
+            raise StorageError('Storage is unreachable.') from None
+        body = response['Body']
+        try:
+            if int(response.get('ContentLength') or 0) > max_bytes:
+                raise ObjectTooLarge('Object is too large.')
+            data = bytearray()
+            for chunk in body.iter_chunks(64 * 1024):
+                data.extend(chunk)
+                if len(data) > max_bytes:
+                    raise ObjectTooLarge('Object is too large.')
+            return bytes(data)
+        except (BotoCoreError, OSError):
+            raise StorageError('Could not read the object.') from None
+        finally:
+            body.close()
+
+    def write(self, key: str, data: bytes, content_type: str) -> None:
+        from botocore.exceptions import BotoCoreError, ClientError
+        try:
+            self._client.put_object(Bucket=self.bucket, Key=key, Body=data, ContentType=content_type)
+        except (BotoCoreError, ClientError) as exc:
+            logger.error('storage_write_failed exc=%s code=%s', type(exc).__name__, self._code(exc))
+            raise StorageError('Could not write the object.') from None
+
+    def delete(self, key: str) -> None:
+        from botocore.exceptions import BotoCoreError, ClientError
+        try:
+            self._client.delete_object(Bucket=self.bucket, Key=key)  # S3 delete is idempotent
+        except ClientError as exc:
+            if self._code(exc) in ('NoSuchKey', '404', 'NotFound'):
+                return
+            logger.error('storage_delete_failed code=%s', self._code(exc))
+            raise StorageError('Could not delete the object.') from None
+        except BotoCoreError:
+            raise StorageError('Storage is unreachable.') from None
+
+    def public_url(self, key: str) -> str:
+        return f'{self.base}/storage/v1/object/public/{self.bucket}/{key}'
+
+
 class FakeStorage:
     """Disk-backed stand-in. Keys are validated against KEY_RE, so no path traversal is possible."""
 
@@ -189,4 +280,6 @@ class FakeStorage:
 
 
 def get_storage():
-    return FakeStorage() if settings.STORAGE_MODE == 'fake' else SupabaseStorage()
+    if settings.STORAGE_MODE == 'fake':
+        return FakeStorage()
+    return SupabaseS3Storage() if settings.SUPABASE_S3_ENABLED else SupabaseStorage()

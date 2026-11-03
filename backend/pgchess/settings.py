@@ -215,8 +215,20 @@ if STORAGE_MODE == 'fake' and not DEBUG:
 SUPABASE_URL = os.environ.get('SUPABASE_URL', '').strip().rstrip('/')
 SUPABASE_SECRET_KEY = os.environ.get('SUPABASE_SECRET_KEY', '').strip()
 SUPABASE_MEDIA_BUCKET = os.environ.get('SUPABASE_MEDIA_BUCKET', '').strip() or 'pg-media'
+# Supabase S3-compatible access keys (Storage > S3 > Access keys). When both are set, storage uses the S3 protocol with
+# presigned PUT URLs, which works with the new sb_secret_ keys; otherwise the REST API (needs a legacy JWT service key).
+SUPABASE_S3_ACCESS_KEY_ID = os.environ.get('SUPABASE_S3_ACCESS_KEY_ID', '').strip()
+SUPABASE_S3_SECRET_ACCESS_KEY = os.environ.get('SUPABASE_S3_SECRET_ACCESS_KEY', '').strip()
+SUPABASE_S3_REGION = os.environ.get('SUPABASE_S3_REGION', '').strip() or 'ap-southeast-1'
+SUPABASE_S3_ENDPOINT = os.environ.get('SUPABASE_S3_ENDPOINT', '').strip().rstrip('/')
+if not SUPABASE_S3_ENDPOINT and SUPABASE_URL.startswith('https://'):
+    SUPABASE_S3_ENDPOINT = SUPABASE_URL.replace('.supabase.co', '.storage.supabase.co', 1) + '/storage/v1/s3'
+SUPABASE_S3_ENABLED = bool(SUPABASE_S3_ACCESS_KEY_ID and SUPABASE_S3_SECRET_ACCESS_KEY)
 if STORAGE_MODE == 'supabase':
-    _missing = [n for n, v in (('SUPABASE_URL', SUPABASE_URL), ('SUPABASE_SECRET_KEY', SUPABASE_SECRET_KEY)) if not v]
+    _required = [('SUPABASE_URL', SUPABASE_URL)]
+    if not SUPABASE_S3_ENABLED:
+        _required.append(('SUPABASE_SECRET_KEY', SUPABASE_SECRET_KEY))
+    _missing = [n for n, v in _required if not v]
     if _missing:
         raise ImproperlyConfigured('STORAGE_MODE=supabase needs: ' + ', '.join(_missing))
     if not SUPABASE_URL.startswith('https://'):
