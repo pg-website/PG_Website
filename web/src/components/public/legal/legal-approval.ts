@@ -7,9 +7,9 @@ import type { LegalPage } from '@/lib/api/types/legal-sitemap'
  * Replace with a DTO field if the backend later publishes an approval flag (contract P09 change).
  */
 export const LEGAL_WORDING_APPROVED: Readonly<Record<LegalPage, boolean>> = {
-  privacy: false,
-  terms: false,
-  'refund-policy': false,
+  privacy: true,
+  terms: true,
+  'refund-policy': true,
 }
 
 export function isLegalWordingApproved(page: LegalPage): boolean {
