@@ -162,7 +162,11 @@ describe('client strict policy (ARCH-001 10.3)', () => {
 
   it('scopes the Supabase host and blob: to /admin (F-22)', () => {
     const on = { supabaseHost: 'abc.supabase.co' }
-    expect(build('/admin/media', on).get('connect-src')).toEqual(["'self'", 'https://abc.supabase.co'])
+    expect(build('/admin/media', on).get('connect-src')).toEqual([
+      "'self'",
+      'https://abc.supabase.co',
+      'https://abc.storage.supabase.co',
+    ])
     expect(build('/admin/media', on).get('img-src')).toEqual(["'self'", 'blob:', 'https://abc.supabase.co'])
     expect(buildClientPolicy({ nonce: NONCE, pathname: '/app', config: { ...base, ...on } })).not.toMatch(
       /supabase|blob:/,

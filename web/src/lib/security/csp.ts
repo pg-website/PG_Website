@@ -138,8 +138,13 @@ export function clientAllowances(pathname: string, config: CspConfig) {
   const google = config.googleAuth && matchesAny(GOOGLE_PATHS, pathname)
   const upload = matchesAny(ADMIN_UPLOAD_PATHS, pathname)
   const supabase = upload && config.supabaseHost !== undefined ? [`https://${config.supabaseHost}`] : []
+  // S3-protocol presigned uploads go to <ref>.storage.supabase.co, a sibling of the REST host <ref>.supabase.co.
+  const supabaseS3 =
+    upload && config.supabaseHost !== undefined && config.supabaseHost.endsWith('.supabase.co')
+      ? [`https://${config.supabaseHost.replace(/\.supabase\.co$/, '.storage.supabase.co')}`]
+      : []
   return {
-    connect: [...(razorpay ? RAZORPAY_CONNECT : []), ...(google ? GOOGLE : []), ...supabase],
+    connect: [...(razorpay ? RAZORPAY_CONNECT : []), ...(google ? GOOGLE : []), ...supabase, ...supabaseS3],
     frame: [...(razorpay ? RAZORPAY_FRAME : []), ...(google ? GOOGLE : [])],
     img: [...(upload ? ['blob:'] : []), ...supabase],
     razorpay,
