@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import re
+import uuid
 
 from django.http import HttpResponse
+from django.utils import timezone
 
 from core.errors import ValidationFailed
 from core.idempotency import run_idempotent
@@ -13,7 +15,12 @@ from . import control_service as cs
 from . import event_service as svc
 from . import messages_service as ms
 from .views import AdminView
-from .views_events import AdminPagePagination
+from .views_events import AdminPagePagination, _object_body
+
+from accounts.models import User
+from registrations import services as reg_services
+from registrations.dto import current_ratings, pool_of
+from registrations.models import Registration
 
 
 def _event(event_id):
@@ -109,3 +116,51 @@ class AuditView(AdminView):
             return response
         paginator, items = cs.list_audit(request, event, AdminPagePagination)
         return paginator.get_paginated_response(items)
+
+
+class CashRegistrationView(AdminView):
+    """POST /api/admin/events/<event_id>/registrations/cash — FEAT-002 §3.3."""
+
+    def post(self, request, event_id):
+        def work():
+            data = _object_body(request)
+            errors = {}
+            # Reject unknown fields
+            for key in data:
+                if key not in ('playerId', 'amountPaise'):
+                    errors[str(key)[:60]] = ['This field cannot be changed here.']
+            # Validate playerId
+            player_id = data.get('playerId')
+            player = None
+            try:
+                pid = uuid.UUID(str(player_id))
+                player = User.objects.filter(pk=pid).first()
+            except (ValueError, TypeError):
+                errors['playerId'] = ['Use a valid UUID.']
+            if player is None and 'playerId' not in errors:
+                errors['playerId'] = ['Player not found.']
+            # Validate amountPaise
+            amount = data.get('amountPaise')
+            if not isinstance(amount, int) or isinstance(amount, bool) or amount <= 0:
+                errors['amountPaise'] = ['Enter a whole number greater than zero.']
+            if errors:
+                raise ValidationFailed(fields=errors)
+            # Resolve event and apply server-side guards
+            event = _event(event_id)
+            if event.price_paise == 0:
+                raise ValidationFailed(
+                    fields={'action': ['Cash registration is not available on free events.']})
+            if event.status in ('cancelled', 'completed'):
+                raise ValidationFailed(
+                    fields={'action': [f'Cannot cash-register on a {event.status} event.']})
+            reg = reg_services.cash_register(request, event, player, amount)
+            now = timezone.now()
+            dto = cs.registration_dto(
+                reg, event, now,
+                rating=current_ratings([reg.user_id], pool_of(event)).get(reg.user_id),
+                first_timer=cs.with_first_timer(
+                    Registration.objects.filter(pk=reg.pk), event).filter(is_first=True).exists(),
+                free=cs.free_seats(event, now),
+            )
+            return ok(dto, status=201)
+        return run_idempotent(request, work)

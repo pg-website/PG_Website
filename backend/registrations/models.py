@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import uuid
 
+from django.conf import settings
 from django.db import models
 from django.db.models import Q
 
@@ -25,6 +26,7 @@ class Registration(models.Model):
     ORDER_STATES = [(s, s) for s in ('none', 'created', 'attempted', 'paid', 'failed', 'expired', 'refunded')]
     REFUND_STATES = [(s, s) for s in ('none', 'pending', 'refunded', 'failed')]
     CHECK_IN_SOURCES = [('self', 'self'), ('host', 'host')]
+    PAYMENT_METHODS = [('razorpay', 'razorpay'), ('cash', 'cash')]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.PROTECT, related_name='event_registrations')
@@ -43,6 +45,8 @@ class Registration(models.Model):
     amount_paise = models.PositiveIntegerField(default=0)
     payment_order_state = models.CharField(max_length=10, choices=ORDER_STATES, default='none')
     refund_state = models.CharField(max_length=10, choices=REFUND_STATES, default='none')
+    payment_method = models.CharField(max_length=10, choices=PAYMENT_METHODS, default='razorpay')
+    cash_registered_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='+')
 
     # Check-in (M06). `manual_checkin_required` is set by the host desk (slice 3).
     manual_checkin_required = models.BooleanField(default=False)
@@ -73,12 +77,16 @@ class Registration(models.Model):
                 name='reg_order_state_valid'),
             models.CheckConstraint(condition=Q(refund_state__in=['none', 'pending', 'refunded', 'failed']),
                                    name='reg_refund_state_valid'),
+            models.CheckConstraint(condition=Q(payment_method__in=['razorpay', 'cash']),
+                                   name='reg_payment_method_valid'),
         ]
         indexes = [
             models.Index(fields=['event', 'status'], name='reg_event_status_idx'),
             models.Index(fields=['user', 'status'], name='reg_user_status_idx'),
             models.Index(fields=['status', 'hold_expires_at'], name='reg_hold_expiry_idx'),
             models.Index(fields=['status', 'offer_expires_at'], name='reg_offer_expiry_idx'),
+            models.Index(fields=['event', 'payment_method'], condition=Q(payment_method='cash'),
+                         name='reg_cash_method_idx'),
         ]
 
     def __str__(self):

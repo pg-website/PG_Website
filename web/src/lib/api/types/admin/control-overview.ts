@@ -49,6 +49,8 @@ export const eventOverviewSchema = z.object({
   title: plainText(120),
   status: eventStatusSchema,
   startsAt: isoInstantSchema,
+  /** FEAT-002: entry fee in paise. 0 = free event (hide the cash-register button). Absent on older servers. */
+  pricePaise: z.int().min(0).optional(),
   summary: z.object({
     confirmed: countSchema,
     waitlist: countSchema,

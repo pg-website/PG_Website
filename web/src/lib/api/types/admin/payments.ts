@@ -62,6 +62,10 @@ const ledgerBase = {
   updatedAt: isoInstantSchema,
   capabilities: z.object({ canRefund: capabilityFlagSchema }),
   version: versionSchema,
+  /** FEAT-002: 'cash' for cash-registered payments; absent on older servers (treat as razorpay). */
+  paymentMethod: z.enum(['razorpay', 'cash']).optional(),
+  /** FEAT-002: display name of the admin who cash-registered; null/absent for Razorpay payments. */
+  actorName: z.string().max(80).nullable().optional(),
 }
 
 /** `GET /admin/events/{id}/payments` row (C13): the event is implied by the route. */

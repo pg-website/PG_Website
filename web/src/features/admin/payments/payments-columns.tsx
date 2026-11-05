@@ -27,7 +27,18 @@ export const LEDGER_COLUMNS: readonly TableColumn<AdminLedgerRowDto>[] = [
     id: 'state',
     header: 'Status',
     priority: 'primary',
-    cell: (row) => <StatusBadge tone={ORDER_STATE_TONE[row.state]}>{ORDER_STATE_LABEL[row.state]}</StatusBadge>,
+    // FEAT-002 rule 6.9: explicit ternary for cash payment rows
+    cell: (row) =>
+      row.paymentMethod === 'cash' ? (
+        <span className="inline-flex flex-col gap-0.5">
+          <StatusBadge tone="copper">CASH</StatusBadge>
+          {row.actorName !== null && row.actorName !== undefined ? (
+            <span className="text-xs text-ink-soft">By {row.actorName}</span>
+          ) : null}
+        </span>
+      ) : (
+        <StatusBadge tone={ORDER_STATE_TONE[row.state]}>{ORDER_STATE_LABEL[row.state]}</StatusBadge>
+      ),
   },
   {
     id: 'refund',

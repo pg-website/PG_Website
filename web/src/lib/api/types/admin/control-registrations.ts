@@ -36,7 +36,12 @@ export const adminRegistrationCapabilitiesSchema = z.object({
   canPromote: capabilityFlagSchema,
   canMarkWelcomed: capabilityFlagSchema,
   canSetPairingActive: capabilityFlagSchema,
+  /** FEAT-002: present on paid events for pending/waitlist/offer rows. Absent on older servers (treat as not allowed). */
+  canCashRegister: capabilityFlagSchema.optional(),
 })
+
+/** Payment method discriminator added in FEAT-002. Absent on older server responses (treat as razorpay). */
+const paymentMethodSchema = z.enum(['razorpay', 'cash'])
 
 export const adminRegistrationSchema = z.object({
   id: uuidSchema,
@@ -52,6 +57,10 @@ export const adminRegistrationSchema = z.object({
   status: registrationStatusSchema,
   /** Null for a free event (no payment). */
   paymentState: paymentOrderStateSchema.nullable(),
+  /** FEAT-002: 'cash' when confirmed via cash registration; absent on older servers. */
+  paymentMethod: paymentMethodSchema.nullable().optional(),
+  /** FEAT-002: display name of the admin who performed the cash registration; null otherwise. */
+  actorName: z.string().max(80).nullable().optional(),
   checkedInAt: isoInstantSchema.nullable(),
   welcomed: z.boolean(),
   pairingActive: z.boolean(),
@@ -69,3 +78,10 @@ export const registrationActionInputSchema = z
     path: ['reason'],
   })
 export type RegistrationActionInput = z.infer<typeof registrationActionInputSchema>
+
+/** `POST .../registrations/cash` (FEAT-002). The browser converts rupees to paise; the server validates the final value. */
+export const cashRegisterInputSchema = z.object({
+  playerId: uuidSchema,
+  amountPaise: z.number().int().min(1),
+})
+export type CashRegisterInput = z.infer<typeof cashRegisterInputSchema>

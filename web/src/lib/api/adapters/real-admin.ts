@@ -180,6 +180,11 @@ export function createRealAdminApi(http: ApiRequester, hooks: RealAdminHooks): P
             adminControlResponses.actOnRegistration,
           ),
         ),
+      cashRegisterPlayer: (eventId, body, key, opts) =>
+        http.json(
+          spec('POST', `${ev(eventId)}/registrations/cash`, opts, { body, idempotencyKey: key }),
+          adminControlResponses.cashRegisterPlayer,
+        ),
       getCheckInDesk: (eventId, query, opts) =>
         http.json(
           spec('GET', `${ev(eventId)}/check-in`, opts, { query: scalars(query) }),

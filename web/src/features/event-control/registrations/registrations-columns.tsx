@@ -33,7 +33,15 @@ export const REGISTRATION_COLUMNS: readonly TableColumn<AdminRegistrationDto>[] 
     id: 'payment',
     header: 'Payment',
     priority: 'primary',
-    cell: (row) => (row.paymentState === null ? 'Free' : REGISTRATION_PAYMENT_LABEL[row.paymentState]),
+    // FEAT-002 rule 6.9: explicit ternary, never `&&` with a string condition
+    cell: (row) =>
+      row.paymentMethod === 'cash' ? (
+        <StatusBadge tone="copper">CASH</StatusBadge>
+      ) : row.paymentState === null ? (
+        'Free'
+      ) : (
+        REGISTRATION_PAYMENT_LABEL[row.paymentState]
+      ),
   },
   {
     id: 'checkin',

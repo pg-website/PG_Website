@@ -20,6 +20,7 @@ import type { EventRecapDto, UpdateRecapInput } from '@/lib/api/types/admin/cont
 import type {
   AdminRegistrationDto,
   AdminRegistrationsQuery,
+  CashRegisterInput,
   RegistrationActionInput,
 } from '@/lib/api/types/admin/control-registrations'
 import type {
@@ -201,6 +202,13 @@ export interface PgAdminControlApi {
     registrationId: AdminRegistrationDto['id'],
     input: RegistrationActionInput,
     opts?: AdminOptionalKeyOpts,
+  ): Promise<AdminRegistrationDto>
+  /** FEAT-002. Create or promote a registration to confirmed with cash payment. Idempotency-Key required. */
+  cashRegisterPlayer(
+    eventId: EventId,
+    body: CashRegisterInput,
+    key: IdempotencyKey,
+    opts?: AdminRequestOpts,
   ): Promise<AdminRegistrationDto>
   /** C05 */
   getCheckInDesk(eventId: EventId, query?: AdminCheckInQuery, opts?: AdminRequestOpts): Promise<CheckInDeskDto>

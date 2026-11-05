@@ -176,6 +176,8 @@ export const adminControlResponses = {
   getOverview: eventOverviewSchema,
   listRegistrations: pageSchema(adminRegistrationSchema),
   actOnRegistration: adminRegistrationSchema,
+  /** FEAT-002 */
+  cashRegisterPlayer: adminRegistrationSchema,
   getCheckInDesk: checkInDeskSchema,
   setCheckIn: manualCheckInResultSchema,
   checkInAll: checkInAllResultSchema,

@@ -11,6 +11,7 @@ import { Select } from '@/components/ui/form/Select'
 import { ResponsiveTable } from '@/components/ui/table/ResponsiveTable'
 import { TablePagination } from '@/components/ui/table/TablePagination'
 import { TableSkeleton } from '@/components/ui/table/TableSkeleton'
+import { CashRegisterDialog } from '@/features/event-control/registrations/CashRegisterDialog'
 import { RegistrationActions } from '@/features/event-control/registrations/RegistrationActions'
 import { REGISTRATION_COLUMNS } from '@/features/event-control/registrations/registrations-columns'
 import {
@@ -63,7 +64,7 @@ function toQuery(filters: Filters, page: number): AdminRegistrationsQuery {
 }
 
 /** Registrations tab (screen 47, C02 + C03): server-paged list, filters, per-row actions from server capabilities. */
-export function RegistrationsTab({ eventId }: ControlTabProps) {
+export function RegistrationsTab({ eventId, overview }: ControlTabProps) {
   const api = useApi()
   const queryClient = useQueryClient()
   const [filters, setFilters] = useState<Filters>(NO_FILTERS)
@@ -94,8 +95,19 @@ export function RegistrationsTab({ eventId }: ControlTabProps) {
     <RegistrationActions eventId={eventId} row={row} onDone={refresh} />
   )
 
+  // FEAT-002: show the cash-register button on paid, non-terminal events only (rule 6.9: explicit ternary)
+  const showCashRegister =
+    overview.pricePaise !== 0 &&
+    overview.status !== 'cancelled' &&
+    overview.status !== 'completed'
+
   return (
     <div className="grid min-w-0 gap-4">
+      {showCashRegister ? (
+        <div className="flex justify-end">
+          <CashRegisterDialog eventId={eventId} overview={overview} onSuccess={refresh} />
+        </div>
+      ) : null}
       <FilterBar
         label="Filter registrations"
         search={{

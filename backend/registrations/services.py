@@ -358,6 +358,98 @@ def accept_offer(user: User, registration_id) -> Registration:
         return reg
 
 
+# ---------------------------------------------------------------- cash register (admin, FEAT-002)
+
+def cash_register(request, event: Event, player: User, amount_paise: int) -> Registration:
+    """Admin-only: confirm a registration with cash payment.
+
+    Caller has already validated:
+      - event.price_paise > 0 (not a free event)
+      - event.status not in ('cancelled', 'completed')
+      - amount_paise > 0
+
+    Returns the confirmed Registration (with .event and .user pre-assigned).
+    Raises:
+      AlreadyRegistered  — player already confirmed
+      EventFull          — no capacity (new + waitlist paths only)
+      ValidationFailed   — payment is in-flight ('attempted' state blocks promotion)
+    """
+    with transaction.atomic():
+        event = lock_event(event.pk)          # serialises all capacity changes
+        now = timezone.now()
+        release_expired(event, now)           # cancel stale holds → free unique slot
+
+        existing = rules.active_registration(player, event.pk, now)
+
+        if existing is not None and existing.status == 'confirmed':
+            raise AlreadyRegistered()         # FR-06, AC-06
+
+        if existing is not None and existing.payment_order_state == 'attempted':
+            raise ValidationFailed(
+                fields={'action': ['A payment is in progress. Cancel it before cash-registering.']})
+
+        promoted = existing is not None
+        prev_status = existing.status if existing is not None else None
+
+        if existing is None or existing.status == 'waitlist':
+            # New registration or waitlist promotion: consumes a free seat
+            if event.capacity is not None and rules.occupied(event.pk, now) >= event.capacity:
+                raise EventFull()             # FR-07, AC-03
+
+        # Expire any dangling Razorpay order on the existing pending row
+        if existing is not None and existing.payment_order_state == 'created':
+            existing.payment_order_state = 'expired'
+            _expire_order(existing)
+
+        changed = ['status', 'confirmed_at', 'amount_paise', 'payment_method',
+                   'cash_registered_by', 'payment_order_state',
+                   'hold_expires_at', 'offer_expires_at', 'version', 'updated_at']
+
+        if existing is not None:
+            existing.status = 'confirmed'
+            existing.confirmed_at = now
+            existing.amount_paise = amount_paise
+            existing.payment_method = 'cash'
+            existing.cash_registered_by = request.user
+            existing.hold_expires_at = None
+            existing.offer_expires_at = None
+            existing.version += 1
+            existing.save(update_fields=changed)
+            reg = existing
+        else:
+            reg = Registration.objects.create(
+                user=player,
+                event=event,
+                status='confirmed',
+                confirmed_at=now,
+                amount_paise=amount_paise,
+                payment_method='cash',
+                cash_registered_by=request.user,
+            )
+
+        adjust_confirmed(event.pk, +1)        # keeps Event.confirmed_count in step
+
+        import audit
+        audit.write(
+            request,
+            action='registration.cash_registration',
+            object_type='registration',
+            object_id=reg.pk,
+            before={'promoted': promoted, 'prevStatus': prev_status},
+            after={
+                'status': 'confirmed',
+                'paymentMethod': 'cash',
+                'amountPaise': amount_paise,
+                'eventId': str(event.pk),
+                'playerId': str(player.pk),
+                'actorName': (request.user.name or '').strip()[:80] or 'Admin',
+            },
+        )
+        reg.event = event
+        reg.user = player
+        return reg
+
+
 # R04 / R05 (payment orders and verify) live in payments/services.py.
 
 # ---------------------------------------------------------------- scheduler entry point

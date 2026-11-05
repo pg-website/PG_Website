@@ -13,7 +13,7 @@ import uuid
 from datetime import timedelta
 
 from django.db import transaction
-from django.db.models import Count, Exists, F, OuterRef, Q, Value
+from django.db.models import CharField, Count, Exists, F, OuterRef, Q, Value
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
@@ -176,17 +176,27 @@ def capabilities(reg: Registration, event: Event, now, *, first_timer: bool, fre
     else:
         can_pair = _flag(True)
 
+    # canCashRegister: available for pending/waitlist/offer rows on paid, non-over events
+    if not over and event.price_paise > 0 and eff in ('pending', 'waitlist', 'offer'):
+        can_cash = _flag(True)
+    else:
+        can_cash = _flag(False, 'Only pending, waitlisted or offered registrations on paid events can be cash-registered.')
+
     return {'canCancel': can_cancel, 'canMoveToWaitlist': can_wl, 'canPromote': can_promote,
-            'canMarkWelcomed': can_welcome, 'canSetPairingActive': can_pair}
+            'canMarkWelcomed': can_welcome, 'canSetPairingActive': can_pair,
+            'canCashRegister': can_cash}
 
 
 def registration_dto(reg: Registration, event: Event, now, *, rating, first_timer: bool, free: int) -> dict:
     user = reg.user
+    actor = reg.cash_registered_by if reg.cash_registered_by_id else None
     return {
         'id': str(reg.pk), 'playerId': str(user.pk), 'name': _name(user), 'email': user.email,
         'phone': user.phone or None, 'rating': rating, 'firstTimer': first_timer,
         'status': _web_status(reg, now),
         'paymentState': None if reg.payment_order_state == 'none' else reg.payment_order_state,
+        'paymentMethod': reg.payment_method,
+        'actorName': (actor.name or 'Admin')[:80] if actor else None,
         'checkedInAt': iso(reg.checked_in_at), 'welcomed': reg.welcomed_at is not None,
         'pairingActive': reg.pairing_active, 'registeredAt': iso(reg.created_at),
         'capabilities': capabilities(reg, event, now, first_timer=first_timer, free=free), 'version': reg.version,
@@ -209,7 +219,7 @@ def list_registrations(request, event: Event, pagination_cls):
     first = _parse_bool(q, 'firstTimer', errors)
     if errors:
         raise ValidationFailed(fields=errors)
-    qs = with_first_timer(Registration.objects.filter(event=event).select_related('user'), event)
+    qs = with_first_timer(Registration.objects.filter(event=event).select_related('user', 'cash_registered_by'), event)
     if search:
         qs = qs.filter(_search_q(search))
     if payment:
@@ -528,6 +538,29 @@ def _row_payment(payments):
     return None if best is None else best[1]
 
 
+def _cash_payment_row(reg: Registration, *, with_event: bool = False) -> dict:
+    """DTO shape for a cash-registered registration in the payments view."""
+    actor = reg.cash_registered_by
+    item = {
+        'id': str(reg.pk),
+        'registrationId': str(reg.pk),
+        'playerName': _name(reg.user),
+        'amountPaise': reg.amount_paise,
+        'currency': 'INR',
+        'state': 'cash',
+        'paymentMethod': 'cash',
+        'actorName': (actor.name or 'Admin')[:80] if actor else 'Deleted admin',
+        'paidAt': iso(reg.confirmed_at),
+        'mismatch': {'mismatch': False},
+        'capabilities': {'canRefund': _flag(False, 'Cash payments are not refunded through the system.')},
+        'version': reg.version,
+    }
+    if with_event:
+        ev = reg.event
+        item.update({'eventId': str(ev.pk), 'eventSlug': ev.slug, 'eventTitle': ev.title[:120]})
+    return item
+
+
 def list_payments(request, event: Event, pagination_cls):
     q = request.query_params
     errors: dict = {}
@@ -536,16 +569,57 @@ def list_payments(request, event: Event, pagination_cls):
     if errors:
         raise ValidationFailed(fields=errors)
     open_mm = PaymentMismatch.objects.filter(resolved_at__isnull=True)
-    qs = PaymentOrder.objects.filter(registration__event=event).select_related('user', 'registration')
+
+    # Razorpay orders — annotated for union
+    order_qs = (PaymentOrder.objects
+                .filter(registration__event=event)
+                .annotate(_rt=Value('order', output_field=CharField()))
+                .values('id', 'updated_at', '_rt'))
     if status:
-        qs = qs.filter(state=status)
+        order_qs = order_qs.filter(state=status)
     if mismatch is not None:
         has = Exists(open_mm.filter(Q(order_id=OuterRef('pk')) | Q(payment__order_id=OuterRef('pk'))))
-        qs = qs.filter(has) if mismatch else qs.filter(~has)
-    qs = qs.order_by('-updated_at', 'id')
+        order_qs = order_qs.filter(has) if mismatch else order_qs.filter(~has)
+
+    # Cash registrations — only when not filtering by Razorpay-specific criteria
+    include_cash = status is None and mismatch is not True
+    if include_cash:
+        cash_qs = (Registration.objects
+                   .filter(event=event, payment_method='cash')
+                   .annotate(_rt=Value('cash', output_field=CharField()))
+                   .values('id', 'updated_at', '_rt'))
+        combined_qs = order_qs.union(cash_qs)
+    else:
+        combined_qs = order_qs
+
+    combined_qs = combined_qs.order_by('-updated_at', 'id')
     paginator = pagination_cls()
-    orders = list(paginator.paginate_queryset(qs, request))
-    return paginator, payment_rows(orders)
+    rows = list(paginator.paginate_queryset(combined_qs, request))
+
+    order_ids = [r['id'] for r in rows if r['_rt'] == 'order']
+    cash_ids = [r['id'] for r in rows if r['_rt'] == 'cash']
+    order_map = (
+        {o.pk: o for o in PaymentOrder.objects.filter(pk__in=order_ids).select_related('user', 'registration')}
+        if order_ids else {}
+    )
+    cash_map = (
+        {r.pk: r for r in Registration.objects.filter(pk__in=cash_ids).select_related('user', 'cash_registered_by')}
+        if cash_ids else {}
+    )
+
+    # Build Razorpay DTOs in one batch to avoid N+1 on Payment/Mismatch queries
+    orders_on_page = [order_map[r['id']] for r in rows if r['_rt'] == 'order' and r['id'] in order_map]
+    razorpay_dtos = payment_rows(orders_on_page)
+    order_dto_map = {o.pk: d for o, d in zip(orders_on_page, razorpay_dtos)}
+
+    items = []
+    for row in rows:
+        pk, rt = row['id'], row['_rt']
+        if rt == 'order' and pk in order_dto_map:
+            items.append(order_dto_map[pk])
+        elif rt == 'cash' and pk in cash_map:
+            items.append(_cash_payment_row(cash_map[pk]))
+    return paginator, items
 
 
 def payment_rows(orders, *, with_event: bool = False) -> list[dict]:
@@ -684,7 +758,8 @@ AUDIT_WEB = {
     'event.publish': 'event.published', 'event.unpublish': 'event.unpublished', 'event.cancel': 'event.cancelled',
     'event.complete': 'event.completed',
     'registration.cancel': 'registration.cancelled', 'registration.move_to_waitlist': 'registration.moved_to_waitlist',
-    'registration.promote': 'registration.promoted', 'checkin.set': 'checkin.set',
+    'registration.promote': 'registration.promoted', 'registration.cash_registration': 'registration.cash_registered',
+    'checkin.set': 'checkin.set',
     'round.generate': 'round.generated', 'round.pairings.edit': 'round.edited', 'round.pairings.correct': 'round.edited',
     'round.publish': 'round.published', 'round.start': 'round.started', 'round.finalise': 'round.finalised',
     'round.result.record': 'result.recorded', 'round.result.resolve': 'result.resolved',

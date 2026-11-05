@@ -70,16 +70,25 @@ const COLUMNS: TableColumn<AdminPaymentRowDto>[] = [
   {
     id: 'status',
     header: 'Status',
-    cell: (row) => (
-      <span className="inline-flex items-center gap-1.5">
-        <StatusBadge tone={STATE_TONE[row.state]}>{STATE_LABEL[row.state]}</StatusBadge>
-        {row.mismatch.mismatch && (
-          <StatusBadge tone="warning" aria-label={`Mismatch: ${row.mismatch.kind}`}>
-            Mismatch
-          </StatusBadge>
-        )}
-      </span>
-    ),
+    // FEAT-002 rule 6.9: explicit ternary for cash payment rows
+    cell: (row) =>
+      row.paymentMethod === 'cash' ? (
+        <span className="inline-flex flex-col gap-0.5">
+          <StatusBadge tone="copper">CASH</StatusBadge>
+          {row.actorName !== null && row.actorName !== undefined ? (
+            <span className="text-xs text-ink-soft">By {row.actorName}</span>
+          ) : null}
+        </span>
+      ) : (
+        <span className="inline-flex items-center gap-1.5">
+          <StatusBadge tone={STATE_TONE[row.state]}>{STATE_LABEL[row.state]}</StatusBadge>
+          {row.mismatch.mismatch ? (
+            <StatusBadge tone="warning" aria-label={`Mismatch: ${row.mismatch.kind}`}>
+              Mismatch
+            </StatusBadge>
+          ) : null}
+        </span>
+      ),
     priority: 'primary',
   },
   {

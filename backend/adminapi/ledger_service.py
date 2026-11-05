@@ -11,7 +11,7 @@ import uuid
 from datetime import date, datetime, time, timedelta, timezone as dt_timezone
 
 from django.db import transaction
-from django.db.models import Exists, OuterRef, Q
+from django.db.models import CharField, Exists, OuterRef, Q, Value
 from django.utils import timezone
 
 import audit
@@ -20,6 +20,7 @@ from core.responses import iso
 from payments import reconcile as pay_reconcile
 from payments import services as pay_services
 from payments.models import Payment, PaymentMismatch, PaymentOrder, PaymentRefund
+from registrations.models import Registration
 
 from . import control_service as cs
 from . import event_service as svc
@@ -59,23 +60,73 @@ def list_ledger(request, pagination_cls):
         errors['to'] = ['Choose a date on or after the start date.']
     if errors:
         raise ValidationFailed(fields=errors)
-    qs = PaymentOrder.objects.select_related('user', 'registration__event')
+
+    start_dt = datetime.combine(start, time.min, tzinfo=dt_timezone.utc) if start else None
+    end_dt = datetime.combine(end + timedelta(days=1), time.min, tzinfo=dt_timezone.utc) if end else None
+
+    # Razorpay orders — annotated for union
+    order_qs = (PaymentOrder.objects
+                .annotate(_rt=Value('order', output_field=CharField()))
+                .values('id', 'updated_at', '_rt'))
     if status:
-        qs = qs.filter(state=status)
+        order_qs = order_qs.filter(state=status)
     if event_id:
-        qs = qs.filter(registration__event_id=event_id)
-    if start:
-        qs = qs.filter(updated_at__gte=datetime.combine(start, time.min, tzinfo=dt_timezone.utc))
-    if end:
-        qs = qs.filter(updated_at__lt=datetime.combine(end + timedelta(days=1), time.min, tzinfo=dt_timezone.utc))
+        order_qs = order_qs.filter(registration__event_id=event_id)
+    if start_dt:
+        order_qs = order_qs.filter(updated_at__gte=start_dt)
+    if end_dt:
+        order_qs = order_qs.filter(updated_at__lt=end_dt)
     if mismatch is not None:
         open_mm = PaymentMismatch.objects.filter(resolved_at__isnull=True)
         has = Exists(open_mm.filter(Q(order_id=OuterRef('pk')) | Q(payment__order_id=OuterRef('pk'))))
-        qs = qs.filter(has) if mismatch else qs.filter(~has)
-    qs = qs.order_by('-updated_at', 'id')
+        order_qs = order_qs.filter(has) if mismatch else order_qs.filter(~has)
+
+    # Cash registrations — only when not filtering by Razorpay-specific criteria
+    include_cash = status is None and mismatch is not True
+    if include_cash:
+        cash_qs = (Registration.objects
+                   .filter(payment_method='cash')
+                   .annotate(_rt=Value('cash', output_field=CharField()))
+                   .values('id', 'updated_at', '_rt'))
+        if event_id:
+            cash_qs = cash_qs.filter(event_id=event_id)
+        if start_dt:
+            cash_qs = cash_qs.filter(updated_at__gte=start_dt)
+        if end_dt:
+            cash_qs = cash_qs.filter(updated_at__lt=end_dt)
+        combined_qs = order_qs.union(cash_qs)
+    else:
+        combined_qs = order_qs
+
+    combined_qs = combined_qs.order_by('-updated_at', 'id')
     paginator = pagination_cls()
-    orders = list(paginator.paginate_queryset(qs, request))
-    return paginator, cs.payment_rows(orders, with_event=True)
+    rows = list(paginator.paginate_queryset(combined_qs, request))
+
+    order_ids = [r['id'] for r in rows if r['_rt'] == 'order']
+    cash_ids = [r['id'] for r in rows if r['_rt'] == 'cash']
+    order_map = (
+        {o.pk: o for o in PaymentOrder.objects.filter(pk__in=order_ids).select_related('user', 'registration__event')}
+        if order_ids else {}
+    )
+    cash_map = (
+        {r.pk: r for r in Registration.objects.filter(pk__in=cash_ids)
+                                               .select_related('user', 'cash_registered_by', 'event')}
+        if cash_ids else {}
+    )
+
+    # Build Razorpay DTOs in one batch to avoid N+1 on Payment/Mismatch queries
+    orders_on_page = [order_map[r['id']] for r in rows if r['_rt'] == 'order' and r['id'] in order_map]
+    razorpay_dtos = cs.payment_rows(orders_on_page, with_event=True)
+    order_dto_map = {o.pk: d for o, d in zip(orders_on_page, razorpay_dtos)}
+
+    items = []
+    for row in rows:
+        pk, rt = row['id'], row['_rt']
+        if rt == 'order' and pk in order_dto_map:
+            items.append(order_dto_map[pk])
+        elif rt == 'cash' and pk in cash_map:
+            items.append(cs._cash_payment_row(cash_map[pk], with_event=True))
+    return paginator, items
 
 
 # ---------------------------------------------------------------- G05

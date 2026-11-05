@@ -267,7 +267,7 @@ describe('admin schema registry covers every method (runtime)', () => {
     expect(methodsOf(adminSettingsResponses)).toEqual(['getSettings', 'updateSettings'])
   })
 
-  it('counts the registered payload methods (plus deleteAsset and exportAudit without payload = 71 methods)', () => {
+  it('counts the registered payload methods (plus deleteAsset and exportAudit without payload = 72 methods)', () => {
     const registered =
       countMethods(adminDashboardResponses) +
       countMethods(adminEventsResponses) +
@@ -280,7 +280,7 @@ describe('admin schema registry covers every method (runtime)', () => {
       countMethods(adminPlayersResponses) +
       countMethods(adminPaymentsResponses) +
       countMethods(adminSettingsResponses)
-    expect(registered + 2).toBe(71)
+    expect(registered + 2).toBe(72)
   })
 })
 
