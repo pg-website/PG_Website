@@ -2,10 +2,9 @@ import type { ReactNode } from 'react'
 import { BrandMark } from '@/components/layout/BrandMark'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { Text } from '@/components/ui/Text'
-import { ResponsiveImage } from '@/components/ui/media/ResponsiveImage'
 
 export interface AuthStoryCopy {
-  eyebrow: string
+  eyebrow?: string
   headline: string
   body: string
 }
@@ -41,19 +40,8 @@ export function AuthLayout({ story = DEFAULT_STORY, children }: AuthLayoutProps)
       >
         <BrandMark tone="dark" />
         <div className="grid min-w-0 gap-6">
-          <ResponsiveImage
-            src="/placeholders/home-first-visit.png"
-            width={1200}
-            height={900}
-            focal={{ x: 0.5, y: 0.5 }}
-            decorative
-            alt=""
-            ratio="4:3"
-            sizes="(min-width:1512px) 640px, 45vw"
-            className="max-w-xl"
-          />
           <div className="grid min-w-0 gap-4">
-            <Eyebrow>{story.eyebrow}</Eyebrow>
+            {story.eyebrow != null && <Eyebrow>{story.eyebrow}</Eyebrow>}
             <p className="max-w-sm font-display text-section wrap-break-word">{story.headline}</p>
             <Text variant="lead" tone="on-dark" className="max-w-md">
               {story.body}

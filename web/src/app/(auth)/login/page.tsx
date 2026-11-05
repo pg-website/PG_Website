@@ -24,7 +24,11 @@ function isSignup(params: Awaited<SearchParams>): boolean {
 
 /** Reference screen 14 (`.auth-static__story`). */
 const SIGNUP_STORY: AuthStoryCopy = {
-  eyebrow: 'My PG',
+  headline: 'Good games start before the clock.',
+  body: 'Your events, pairings, ratings and people in one quiet place.',
+}
+
+const LOGIN_STORY: AuthStoryCopy = {
   headline: 'Good games start before the clock.',
   body: 'Your events, pairings, ratings and people in one quiet place.',
 }
@@ -57,7 +61,8 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
   }
 
   return (
-    <AuthLayout>
+    <AuthLayout story={LOGIN_STORY}>
+
       <div className="grid min-w-0 gap-8">
         <div className="grid min-w-0 gap-3">
           <Eyebrow>Welcome back</Eyebrow>
