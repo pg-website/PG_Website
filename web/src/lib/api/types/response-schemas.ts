@@ -170,6 +170,8 @@ export const adminEventsResponses = {
   cancelEvent: cancelEventResultSchema,
   completeEvent: completeEventResultSchema,
   deleteEvent: z.object({}),
+  /** PLAN-012 */
+  enrollPlayer: adminRegistrationSchema,
 } as const
 
 export const adminControlResponses = {
@@ -241,6 +243,8 @@ export const adminPlayersResponses = {
   listPlayers: pageSchema(adminPlayerRowSchema),
   getPlayer: adminPlayerSchema,
   changeRole: changeRoleResultSchema,
+  /** PLAN-012 */
+  createPlayer: adminPlayerSchema,
 } as const
 
 export const adminPaymentsResponses = {

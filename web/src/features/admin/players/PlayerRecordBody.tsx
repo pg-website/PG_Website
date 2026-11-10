@@ -11,6 +11,7 @@ import { Text } from '@/components/ui/Text'
 import { ResponsiveTable } from '@/components/ui/table/ResponsiveTable'
 import type { TableColumn } from '@/components/ui/table/tableTypes'
 import { ChangeRoleAction } from '@/features/admin/players/ChangeRoleAction'
+import { EnrollInEventDialog } from '@/features/admin/players/EnrollInEventDialog'
 import { PlayerFact as Fact } from '@/features/admin/players/PlayerFact'
 import {
   attendanceRatio,
@@ -153,6 +154,17 @@ export function PlayerRecordBody({ player, onRoleChanged }: { player: AdminPlaye
           <ChangeRoleAction key={`${player.id}-${player.role}`} player={player} onChanged={onRoleChanged} />
         </div>
       </Surface>
+
+      {player.status === 'active' ? (
+        <Surface as="section" tone="admin" aria-labelledby="player-actions">
+          <Heading level={3} id="player-actions">
+            Actions
+          </Heading>
+          <div className="mt-4">
+            <EnrollInEventDialog player={player} />
+          </div>
+        </Surface>
+      ) : null}
 
       <section aria-labelledby="player-history" className="grid gap-3">
         <Heading level={3} id="player-history">

@@ -18,6 +18,7 @@ import type {
 import type { EventOverviewDto } from '@/lib/api/types/admin/control-overview'
 import type { EventRecapDto, UpdateRecapInput } from '@/lib/api/types/admin/control-recap'
 import type {
+  AdminEnrollInput,
   AdminRegistrationDto,
   AdminRegistrationsQuery,
   CashRegisterInput,
@@ -77,6 +78,7 @@ import type {
   RefundResult,
 } from '@/lib/api/types/admin/payments'
 import type {
+  AdminCreatePlayerInput,
   AdminPlayerDto,
   AdminPlayerRowDto,
   AdminPlayersQuery,
@@ -183,6 +185,11 @@ export interface PgAdminEventsApi {
   ): Promise<CancelEventResult>
   /** E10 */
   completeEvent(eventId: EventId, input?: CompleteEventInput, opts?: AdminOptionalKeyOpts): Promise<CompleteEventResult>
+  /**
+   * PLAN-012. Admin-direct enrollment: creates a confirmed registration with `payment_method='admin_enrolled'` and
+   * `amount_paise=0`. Works for both free and paid events. Idempotency-Key required; no step-up required.
+   */
+  enrollPlayer(eventId: EventId, input: AdminEnrollInput, key: IdempotencyKey, opts?: AdminRequestOpts): Promise<AdminRegistrationDto>
 }
 
 // ---------- Event control room (C01 to C17, screens 46 to 53) ----------
@@ -398,6 +405,11 @@ export interface PgAdminPlayersApi {
     key: IdempotencyKey,
     opts: StepUpOpts,
   ): Promise<ChangeRoleResult>
+  /**
+   * PLAN-012. Create a player account with a temporary password. Idempotency-Key and step-up token required.
+   * The created user will have `mustChangePassword=true` and must change their password on first login.
+   */
+  createPlayer(input: AdminCreatePlayerInput, key: IdempotencyKey, opts: StepUpOpts): Promise<AdminPlayerDto>
 }
 
 // ---------- Payments (G04 to G06, screen 55; per-event list is control.listEventPayments) ----------

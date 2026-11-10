@@ -20,7 +20,7 @@ import {
   ratingResponses,
   registrationResponses,
 } from '@/lib/api/types/response-schemas'
-import { authResultWireSchema, type AuthResult } from '@/lib/api/types/auth'
+import { authResultWireSchema, type AuthResult, type ChangePasswordInput } from '@/lib/api/types/auth'
 import { nextUpSchema } from '@/lib/api/types/my-events'
 import { DEFAULT_PAGE_SIZE, type PageQuery } from '@/lib/api/types/pagination'
 import type { IdempotencyKey } from '@/lib/api/types/primitives'
@@ -334,6 +334,9 @@ export function createRealPlayerApi(http: ApiRequester, hooks: RealPlayerHooks):
           }),
           meResponses.getMyEvents,
         )
+      },
+      changePassword(input: ChangePasswordInput, opts) {
+        return http.empty(command('/me/password', opts, input, undefined, 'PATCH'))
       },
     },
 

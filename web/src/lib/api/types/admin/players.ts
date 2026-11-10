@@ -26,6 +26,16 @@ export const adminPlayersQuerySchema = z.strictObject({
 })
 export type AdminPlayersQuery = z.infer<typeof adminPlayersQuerySchema>
 
+/** `POST /admin/players` (PLAN-012 TASK-209). Requires a step-up token and an idempotency key. */
+export const adminCreatePlayerInputSchema = z.strictObject({
+  name: z.string().min(1).max(80),
+  email: z.string().email(),
+  password: z.string().min(1).max(128),
+  city: z.string().max(80).optional(),
+  phone: z.string().min(7).max(20).optional(),
+})
+export type AdminCreatePlayerInput = z.infer<typeof adminCreatePlayerInputSchema>
+
 export const ACCOUNT_STATUSES = ['active', 'suspended'] as const
 export const accountStatusSchema = z.enum(ACCOUNT_STATUSES)
 export type AccountStatus = z.infer<typeof accountStatusSchema>

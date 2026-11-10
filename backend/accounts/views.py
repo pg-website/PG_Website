@@ -307,6 +307,35 @@ class PublicIdentityView(PrivateView):
         return ok(profile_dto(user))
 
 
+class ChangePasswordView(PrivateView):
+    """PLAN-012 TASK-205. PATCH /api/me/password — authenticated self-service password change."""
+
+    def patch(self, request):
+        data = require_object(request.data)
+        c = Collector(data)
+        c.reject_unknown({'currentPassword', 'newPassword'})
+        current = c.text('currentPassword', max_len=passwords.MAX_LENGTH, strip=False)
+        new_pwd = data.get('newPassword')
+        message = passwords.check_length(new_pwd)
+        if message:
+            c.add('newPassword', message)
+        c.done()
+        ratelimit.check_and_hit(
+            'change-password', str(request.user.pk),
+            ratelimit.LOGIN_FAILURES_PER_USER if hasattr(ratelimit, 'LOGIN_FAILURES_PER_USER') else ratelimit.LOGIN_PER_IP,
+        )
+
+        def validate(user):
+            if passwords.is_weak(new_pwd, user.email):
+                raise WeakPassword(fields={'newPassword': [WeakPassword.default_detail]})
+
+        try:
+            services.change_own_password(request.user, current, new_pwd, validate)
+        except InvalidCredentials:
+            raise ValidationFailed(fields={'currentPassword': ['Incorrect password.']})
+        return ok(None)
+
+
 class PreferencesView(PrivateView):
     def patch(self, request):
         c = Collector(require_object(request.data))

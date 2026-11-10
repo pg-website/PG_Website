@@ -10,6 +10,7 @@ from django.utils import timezone
 from core.errors import ValidationFailed
 from core.idempotency import run_idempotent
 from core.responses import ok
+from core.validation import Collector, require_object
 
 from . import control_service as cs
 from . import event_service as svc
@@ -164,3 +165,45 @@ class CashRegistrationView(AdminView):
             )
             return ok(dto, status=201)
         return run_idempotent(request, work)
+
+
+class AdminEnrollView(AdminView):
+    """POST /api/admin/events/<event_id>/registrations/enroll — PLAN-012 TASK-208.
+
+    Directly enrolls a player as a confirmed participant (payment_method='admin_enrolled', amount_paise=0).
+    Works for both free and paid events. No step-up required; audit record is the control.
+    """
+
+    def post(self, request, event_id):
+        data = require_object(request.data)
+        c = Collector(data)
+        c.reject_unknown({'playerId'})
+        player_id_raw = c.text('playerId', max_len=36)
+        c.done()
+
+        try:
+            player_uuid = uuid.UUID(str(player_id_raw))
+        except (ValueError, AttributeError):
+            raise ValidationFailed(fields={'playerId': ['Enter a valid UUID.']})
+
+        player = User.objects.filter(pk=player_uuid).first()
+        if player is None:
+            raise ValidationFailed(fields={'playerId': ['Player not found.']})
+
+        event = _event(event_id)
+        if event.status in ('cancelled', 'completed'):
+            raise ValidationFailed(detail='Cannot enroll players in a cancelled or completed event.')
+
+        def work():
+            reg = reg_services.admin_enroll(request, event, player)
+            now = timezone.now()
+            dto = cs.registration_dto(
+                reg, event, now,
+                rating=current_ratings([reg.user_id], pool_of(event)).get(reg.user_id),
+                first_timer=cs.with_first_timer(
+                    Registration.objects.filter(pk=reg.pk), event).filter(is_first=True).exists(),
+                free=cs.free_seats(event, now),
+            )
+            return ok(dto, status=201)
+
+        return run_idempotent(request, work, required=True)

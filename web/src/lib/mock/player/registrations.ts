@@ -204,6 +204,8 @@ export function createMeGroup(runner: PlayerRunner, bearer: Bearer): PgMeApi {
           return paginate(rows, query)
         }),
       ),
+    // PLAN-012: mock stubs out changePassword — the gate never shows in mock mode.
+    changePassword: () => Promise.resolve(),
   }
 }
 

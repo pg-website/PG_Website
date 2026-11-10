@@ -40,8 +40,11 @@ export const adminRegistrationCapabilitiesSchema = z.object({
   canCashRegister: capabilityFlagSchema.optional(),
 })
 
-/** Payment method discriminator added in FEAT-002. Absent on older server responses (treat as razorpay). */
-const paymentMethodSchema = z.enum(['razorpay', 'cash'])
+/**
+ * Payment method discriminator added in FEAT-002. `admin_enrolled` added in PLAN-012.
+ * Absent on older server responses (treat as razorpay).
+ */
+const paymentMethodSchema = z.enum(['razorpay', 'cash', 'admin_enrolled'])
 
 export const adminRegistrationSchema = z.object({
   id: uuidSchema,
@@ -85,3 +88,9 @@ export const cashRegisterInputSchema = z.object({
   amountPaise: z.number().int().min(1),
 })
 export type CashRegisterInput = z.infer<typeof cashRegisterInputSchema>
+
+/** `POST .../registrations/enroll` (PLAN-012). Admin-direct enrollment bypassing payment; idempotency key required. */
+export const adminEnrollInputSchema = z.strictObject({
+  playerId: z.string().uuid(),
+})
+export type AdminEnrollInput = z.infer<typeof adminEnrollInputSchema>

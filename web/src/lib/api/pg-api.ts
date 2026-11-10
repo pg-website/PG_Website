@@ -1,6 +1,7 @@
 import type { PgAdminApi } from '@/lib/api/pg-admin-api'
 import type {
   AuthResult,
+  ChangePasswordInput,
   LoginInput,
   MeDto,
   OauthExchangeInput,
@@ -153,7 +154,7 @@ export interface PgAuthApi {
   exchangeOAuthCode(input: OauthExchangeInput, opts?: RequestOpts): Promise<SessionTokens>
 }
 
-/** Player dashboard reads (M01 to M04). */
+/** Player dashboard reads (M01 to M04) and authenticated account mutations. */
 export interface PgMeApi {
   /** M01. Null is the empty state. */
   getNextUp(opts?: RequestOpts): Promise<NextUpDto | null>
@@ -163,6 +164,11 @@ export interface PgMeApi {
   getPeople(opts?: RequestOpts): Promise<PersonDto[]>
   /** M04 */
   getMyEvents(query: MyEventsQuery, opts?: RequestOpts): Promise<Page<MyRegistrationDto>>
+  /**
+   * `PATCH /api/me/password` (PLAN-012). Authenticated password change. Clears `mustChangePassword` and revokes all
+   * sessions. The caller must handle the resulting `401` on the next request (the backend session is gone).
+   */
+  changePassword(input: ChangePasswordInput, opts?: RequestOpts): Promise<void>
 }
 
 /** Registration and payments (R01 to R08). The server derives user, price, capacity, window, hold and payment state. */

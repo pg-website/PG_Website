@@ -450,6 +450,93 @@ def cash_register(request, event: Event, player: User, amount_paise: int) -> Reg
         return reg
 
 
+# ---------------------------------------------------------------- admin enroll (admin, PLAN-012)
+
+def admin_enroll(request, event: Event, player: User) -> Registration:
+    """Admin directly enrolls a player in any event (free or paid) as a confirmed participant.
+
+    payment_method='admin_enrolled', amount_paise=0. Capacity is enforced. No price guard.
+    Raises:
+      AlreadyRegistered  — player is already confirmed
+      EventFull          — no capacity (new + waitlist paths only)
+      ValidationFailed   — payment is in-flight
+    """
+    with transaction.atomic():
+        event = lock_event(event.pk)          # serialises all capacity changes
+        now = timezone.now()
+        release_expired(event, now)           # cancel stale holds → free unique slot
+
+        existing = rules.active_registration(player, event.pk, now)
+
+        if existing is not None and existing.status == 'confirmed':
+            raise AlreadyRegistered()
+
+        if existing is not None and existing.payment_order_state == 'attempted':
+            raise ValidationFailed(
+                fields={'action': ['A payment is in-flight. Cancel the payment order before enrolling.']})
+
+        promoted = existing is not None
+        prev_status = existing.status if existing is not None else None
+
+        # Capacity check for new registrations and waitlist promotions (offer already holds a seat)
+        if existing is None or existing.status == 'waitlist':
+            if event.capacity is not None and rules.occupied(event.pk, now) >= event.capacity:
+                raise EventFull()
+
+        # Expire any dangling payment order on the existing row
+        if existing is not None and existing.payment_order_state == 'created':
+            existing.payment_order_state = 'expired'
+            _expire_order(existing)
+
+        changed = ['status', 'confirmed_at', 'amount_paise', 'payment_method',
+                   'cash_registered_by', 'payment_order_state',
+                   'hold_expires_at', 'offer_expires_at', 'version', 'updated_at']
+
+        if existing is not None:
+            existing.status = 'confirmed'
+            existing.confirmed_at = now
+            existing.amount_paise = 0
+            existing.payment_method = 'admin_enrolled'
+            existing.cash_registered_by = request.user
+            existing.hold_expires_at = None
+            existing.offer_expires_at = None
+            existing.version += 1
+            existing.save(update_fields=changed)
+            reg = existing
+        else:
+            reg = Registration.objects.create(
+                user=player,
+                event=event,
+                status='confirmed',
+                confirmed_at=now,
+                amount_paise=0,
+                payment_method='admin_enrolled',
+                cash_registered_by=request.user,
+            )
+
+        adjust_confirmed(event.pk, +1)        # keeps Event.confirmed_count in step
+
+        import audit
+        audit.write(
+            request,
+            action='registration.admin_enrolled',
+            object_type='registration',
+            object_id=reg.pk,
+            before={'promoted': promoted, 'prevStatus': prev_status},
+            after={
+                'status': 'confirmed',
+                'paymentMethod': 'admin_enrolled',
+                'amountPaise': 0,
+                'eventId': str(event.pk),
+                'playerId': str(player.pk),
+                'actorName': (request.user.name or '').strip()[:80] or 'Admin',
+            },
+        )
+        reg.event = event
+        reg.user = player
+        return reg
+
+
 # R04 / R05 (payment orders and verify) live in payments/services.py.
 
 # ---------------------------------------------------------------- scheduler entry point

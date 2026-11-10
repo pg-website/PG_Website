@@ -24,6 +24,7 @@ def me_dto(user) -> dict:
         'role': user.role,
         'profileComplete': user.profile_complete,
         'onboardingDone': user.onboarding_done,
+        'mustChangePassword': user.must_change_password,
         'city': user.city or None,
         'ratings': ratings,
     }

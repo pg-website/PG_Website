@@ -177,6 +177,19 @@ def confirm_password_reset(token: str, new_password: str, validate) -> None:
     return user
 
 
+# ---- authenticated password change (PLAN-012 TASK-205) ----
+def change_own_password(user: User, current_password: str, new_password: str, validate) -> None:
+    """A-NEW. Lets a signed-in user change their own password. Clears must_change_password. Revokes all sessions."""
+    if not user.check_password(current_password):
+        raise InvalidCredentials()
+    validate(user)  # raises WeakPassword if too weak
+    with transaction.atomic():
+        user.set_password(new_password)
+        user.must_change_password = False
+        user.save(update_fields=['password', 'must_change_password', 'updated_at'])
+        revoke_all_for_user(user.pk)
+
+
 # ---- step-up ----
 def issue_step_up(user: User, password: str) -> str:
     if not user.check_password(password):

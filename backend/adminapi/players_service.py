@@ -11,7 +11,7 @@ import uuid
 
 from datetime import timedelta
 
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Count, Q, Value
 from django.db.models.functions import Replace
 from django.utils import timezone
@@ -20,9 +20,9 @@ import audit
 from accounts.models import Rating, User
 from audit.models import AuditLog
 from content import runtime_settings
-from core.errors import NotFound, ValidationFailed
+from core.errors import NotFound, ValidationFailed, WeakPassword
 from core.responses import iso
-from core.validation import PHONE_QUERY_RE, phone_digits
+from core.validation import PHONE_QUERY_RE, PHONE_RE, Collector, phone_digits, present, require_object
 from registrations.models import Registration
 
 from . import control_service as cs
@@ -187,6 +187,65 @@ def _parse_role(data) -> str:
     if errors:
         raise ValidationFailed(fields=errors)
     return role
+
+
+def create_player(request, data) -> dict:
+    """Admin creates a player account with a temporary password (PLAN-012 TASK-203).
+
+    Returns the full player record (same shape as get_player) on success.
+    Raises ValidationFailed on duplicate email, weak password, or invalid input.
+    """
+    from accounts import passwords
+
+    data = require_object(data)
+    c = Collector(data)
+    c.reject_unknown({'name', 'email', 'password', 'city', 'phone'})
+    name = c.text('name', max_len=80)
+    email = c.email()
+    password_raw = data.get('password')
+    pw_message = passwords.check_length(password_raw)
+    if pw_message:
+        c.add('password', pw_message)
+    city = c.text('city', max_len=80, required=False)
+    phone = c.text('phone', max_len=20, min_len=7, required=False, pattern=PHONE_RE)
+    c.done()
+
+    # Strength check (after c.done so length errors take priority)
+    if passwords.is_weak(password_raw, email):
+        raise ValidationFailed(fields={'password': [WeakPassword.default_detail]})
+
+    # Pre-flight uniqueness check (also caught as IntegrityError below for races)
+    if User.objects.filter(email=email).exists():
+        raise ValidationFailed(fields={'email': ['A player with this email already exists.']})
+
+    try:
+        with transaction.atomic():
+            user = User.objects.create_user(
+                email, password_raw, name,
+                city=city if present(city) else None,
+                phone=phone if present(phone) else None,
+            )
+            user.must_change_password = True
+            user.save(update_fields=['must_change_password'])
+            audit.write(
+                request,
+                action='player.create',
+                object_type='user',
+                object_id=user.pk,
+                before=None,
+                after={
+                    'name': user.name,
+                    'email': user.email,
+                    'role': user.role,
+                    'city': user.city or None,
+                    'mustChangePassword': True,
+                    'actorName': (request.user.name or '').strip()[:80] or 'Admin',
+                },
+            )
+    except IntegrityError:
+        raise ValidationFailed(fields={'email': ['A player with this email already exists.']}) from None
+
+    return get_player(request, user.pk)
 
 
 def change_role(request, player_id, data) -> dict:

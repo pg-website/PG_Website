@@ -159,6 +159,11 @@ export function createRealAdminApi(http: ApiRequester, hooks: RealAdminHooks): P
           spec('POST', `${ev(eventId)}/complete`, opts, { body: input, idempotencyKey: optionalKey(opts) }),
           adminEventsResponses.completeEvent,
         ),
+      enrollPlayer: (eventId, input, key, opts) =>
+        http.json(
+          spec('POST', `${ev(eventId)}/registrations/enroll`, opts, { body: input, idempotencyKey: key }),
+          adminEventsResponses.enrollPlayer,
+        ),
     },
 
     control: {
@@ -380,6 +385,11 @@ export function createRealAdminApi(http: ApiRequester, hooks: RealAdminHooks): P
         http.json(
           spec('PUT', `/admin/players/${seg(id)}/role`, opts, stepped(opts, { body: input, idempotencyKey: key })),
           adminPlayersResponses.changeRole,
+        ),
+      createPlayer: (input, key, opts) =>
+        http.json(
+          spec('POST', '/admin/players', opts, stepped(opts, { body: input, idempotencyKey: key })),
+          adminPlayersResponses.createPlayer,
         ),
     },
 

@@ -54,6 +54,7 @@ class User(AbstractBaseUser):
 
     # First-login preferences (M16)
     onboarding_done = models.BooleanField(default=False)
+    must_change_password = models.BooleanField(default=False, db_default=False)
     play_style = models.CharField(max_length=20, null=True, blank=True)
     mood = models.CharField(max_length=20, null=True, blank=True)
 

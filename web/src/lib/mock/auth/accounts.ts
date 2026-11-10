@@ -41,6 +41,8 @@ export function toMe(account: MockAccount): MeDto {
     onboardingDone: account.onboardingDone,
     city: account.profile.city,
     ratings: account.ratings.map((entry) => ({ ...entry })),
+    // PLAN-012: mock accounts never require a forced password change
+    mustChangePassword: false,
   }
 }
 

@@ -4,12 +4,13 @@ import type { Route } from 'next'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { MainLandmark } from '@/components/layout/MainLandmark'
+import { MustChangePasswordGate } from '@/components/layout/MustChangePasswordGate'
 import { RouteLoading } from '@/components/layout/RouteLoading'
 import { ErrorState } from '@/components/ui/feedback/ErrorState'
 import { loginPath, safeRedirect } from '@/lib/security/safe-redirect'
 import { consumeExplicitSignOut } from '@/features/auth/explicit-sign-out'
 import { currentPath, rememberReturnTo } from '@/features/auth/return-to'
-import { useAuthActions, useAuthSelector, useAuthStatus } from '@/features/auth/useAuth'
+import { useAuthActions, useAuthSelector, useAuthStatus, useAuthUser } from '@/features/auth/useAuth'
 
 interface RequireAuthProps {
   /** The protected content. Rendered only once the session is confirmed (`signed-in`). */
@@ -38,7 +39,8 @@ export function RequireAuth({ children, ownLandmark = false }: RequireAuthProps)
   const status = useAuthStatus()
   // A reference taken from the state, so the selector stays stable (re-renders only when the error itself changes).
   const error = useAuthSelector((state) => (state.status === 'loading' ? state.error : null))
-  const { refreshUser } = useAuthActions()
+  const user = useAuthUser()
+  const { refreshUser, logout } = useAuthActions()
   const router = useRouter()
   const [retrying, setRetrying] = useState(false)
   // Whether this mount has seen a confirmed session. Read in effects only (RBP rerender-use-ref-transient-values).
@@ -61,7 +63,23 @@ export function RequireAuth({ children, ownLandmark = false }: RequireAuthProps)
     router.replace(loginPath(returnTo) as Route)
   }, [status, router])
 
-  if (status === 'signed-in') return children
+  if (status === 'signed-in') {
+    // PLAN-012: gate admin-created accounts until they change their temporary password.
+    if (user?.mustChangePassword === true) {
+      const handleLogout = (): void => {
+        void logout().then(() => {
+          router.replace('/login' as Route)
+        })
+      }
+      return (
+        <MustChangePasswordGate
+          user={{ name: user.name, email: user.email, mustChangePassword: true }}
+          onLoggedOut={handleLogout}
+        />
+      )
+    }
+    return children
+  }
 
   if (status === 'loading' && error !== null && error !== undefined) {
     const retry = (): void => {

@@ -30,6 +30,8 @@ urlpatterns = [
          name='admin-registration-action'),
     path('events/<str:event_id>/registrations/cash', cv.CashRegistrationView.as_view(),
          name='admin-event-cash-registration'),
+    path('events/<str:event_id>/registrations/enroll', cv.AdminEnrollView.as_view(),
+         name='admin-event-enroll'),
     path('events/<str:event_id>/check-in', cv.CheckInView.as_view(), name='admin-event-checkin'),
     path('events/<str:event_id>/check-in/all', cv.CheckInAllView.as_view(), name='admin-event-checkin-all'),
     path('events/<str:event_id>/payments',cv.PaymentsView.as_view(), name='admin-event-payments'),

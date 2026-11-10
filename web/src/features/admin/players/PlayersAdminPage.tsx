@@ -15,6 +15,7 @@ import { ResponsiveTable } from '@/components/ui/table/ResponsiveTable'
 import { TablePagination } from '@/components/ui/table/TablePagination'
 import { TableSkeleton } from '@/components/ui/table/TableSkeleton'
 import { Text } from '@/components/ui/Text'
+import { CreatePlayerDialog } from '@/features/admin/players/CreatePlayerDialog'
 import { PLAYER_COLUMNS } from '@/features/admin/players/players-columns'
 import { parseSelectedId, toSearchQuery } from '@/features/admin/players/players-labels'
 import { PlayerRecord } from '@/features/admin/players/PlayerRecord'
@@ -111,13 +112,16 @@ export function PlayersAdminPage() {
 
   return (
     <div className="grid gap-6 p-4 sm:p-6">
-      <header>
-        <Heading level={1} size="section">
-          Players
-        </Heading>
-        <Text variant="small" className="mt-1">
-          Find a player, see their record and manage their role.
-        </Text>
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <Heading level={1} size="section">
+            Players
+          </Heading>
+          <Text variant="small" className="mt-1">
+            Find a player, see their record and manage their role.
+          </Text>
+        </div>
+        <CreatePlayerDialog onCreated={() => void query.refetch()} />
       </header>
 
       <SplitWorkspace

@@ -53,6 +53,11 @@ export const meSchema = z.object({
   onboardingDone: z.boolean(),
   city: z.string().trim().min(1).max(80).nullable(),
   ratings: ratingsSummarySchema,
+  /**
+   * Set to `true` for admin-created accounts until the user changes their temporary password (PLAN-012).
+   * Optional so existing API responses without this field continue to parse during the deployment window.
+   */
+  mustChangePassword: z.boolean().optional().default(false),
 })
 export type MeDto = z.infer<typeof meSchema>
 
@@ -114,6 +119,13 @@ export type PasswordResetConfirm = z.infer<typeof passwordResetConfirmSchema>
 export const stepUpInputSchema = z.object({ password: z.string().min(1).max(128) })
 export const stepUpResultSchema = tokenCookieBodySchema
 export type StepUpInput = z.infer<typeof stepUpInputSchema>
+
+/** `PATCH /api/me/password` (PLAN-012). Authenticated password change; clears `mustChangePassword` and revokes all sessions. */
+export const changePasswordInputSchema = z.strictObject({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(1),
+})
+export type ChangePasswordInput = z.infer<typeof changePasswordInputSchema>
 
 // ---------- Google OAuth (flagged, A08 and A09) ----------
 

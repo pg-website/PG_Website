@@ -16,6 +16,11 @@ class PlayersView(AdminView):
         paginator, items = ps.list_players(request, AdminPagePagination)
         return paginator.get_paginated_response(items)
 
+    def post(self, request):
+        from .permissions import require_step_up
+        require_step_up(request)
+        return run_idempotent(request, lambda: ok(ps.create_player(request, request.data), status=201), required=True)
+
 
 class PlayerDetailView(AdminView):
     def get(self, request, player_id):

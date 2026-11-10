@@ -7,4 +7,5 @@ urlpatterns = [
     path('profile', views.ProfileView.as_view()),
     path('public-identity', views.PublicIdentityView.as_view()),
     path('preferences', views.PreferencesView.as_view()),
+    path('password', views.ChangePasswordView.as_view()),
 ]
