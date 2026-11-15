@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useTransition } from 'react'
+import { useRef, useState } from 'react'
 import { Banner } from '@/components/ui/feedback/Banner'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/overlay/Dialog'
@@ -25,6 +25,7 @@ type FormErrors = {
   name?: string
   email?: string
   password?: string
+  phone?: string
   dialogLevel?: string
 }
 
@@ -44,7 +45,7 @@ export function CreatePlayerDialog({ onCreated }: CreatePlayerDialogProps) {
   const [form, setForm] = useState(emptyForm)
   const [errors, setErrors] = useState<FormErrors>({})
   const [copied, setCopied] = useState(false)
-  const [isPending, startTransition] = useTransition()
+  const [isPending, setIsPending] = useState(false)
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const canSubmit = form.name.trim() !== '' && form.email.trim() !== '' && form.password.trim() !== ''
@@ -82,40 +83,45 @@ export function CreatePlayerDialog({ onCreated }: CreatePlayerDialogProps) {
     setErrors({})
     const intentKey = newIdempotencyKey()
 
-    startTransition(async () => {
-      try {
-        await withStepUpToken((stepUp) =>
-          api.admin.players.createPlayer(
-            {
-              name: form.name.trim(),
-              email: form.email.trim(),
-              password: form.password,
-              ...(form.city.trim() !== '' ? { city: form.city.trim() } : {}),
-              ...(form.phone.trim() !== '' ? { phone: form.phone.trim() } : {}),
-            },
-            intentKey,
-            { stepUp },
-          ),
-        )
+    // Not a transition: the step-up prompt opens from inside this call and React would hold its update until we finish.
+    setIsPending(true)
+    withStepUpToken((stepUp) =>
+      api.admin.players.createPlayer(
+        {
+          name: form.name.trim(),
+          email: form.email.trim(),
+          password: form.password,
+          ...(form.city.trim() !== '' ? { city: form.city.trim() } : {}),
+          ...(form.phone.trim() !== '' ? { phone: form.phone.trim() } : {}),
+        },
+        intentKey,
+        { stepUp },
+      ),
+    ).then(
+      () => {
+        setIsPending(false)
         setOpen(false)
         pushToast('success', 'Player created — share the temporary password with them.')
         onCreated?.()
-      } catch (error) {
+      },
+      (error: unknown) => {
+        setIsPending(false)
         if (isAbortError(error)) return
         if (isApiError(error) && error.code === 'VALIDATION_FAILED') {
           const fields = fieldErrorsFrom(error)
-          if (fields.email !== undefined || fields.password !== undefined) {
+          if (fields.email !== undefined || fields.password !== undefined || fields.phone !== undefined) {
             setErrors({
               email: fields.email?.[0],
               password: fields.password?.[0],
+              phone: fields.phone?.[0],
             })
             return
           }
         }
         const copy = copyFor(error, { action: 'create this player' })
         setErrors({ dialogLevel: `${copy.title} ${copy.body}` })
-      }
-    })
+      },
+    )
   }
 
   return (
@@ -227,7 +233,12 @@ export function CreatePlayerDialog({ onCreated }: CreatePlayerDialogProps) {
             />
           </Field>
 
-          <Field label="Phone" optionalLabel hint="Include country code, e.g. +91 98765 43210.">
+          <Field
+            label="Phone"
+            optionalLabel
+            error={errors.phone}
+            hint="7 to 20 characters: digits, spaces, ( ) - and an optional leading +. E.g. +91 98765 43210."
+          >
             <Input
               type="tel"
               value={form.phone}
