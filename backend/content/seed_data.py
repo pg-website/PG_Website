@@ -166,7 +166,7 @@ SECTIONS = {
         'primary': [
             {'label': 'Play', 'href': '/play'},
             {'label': 'Community', 'href': '/community'},
-            {'label': 'Stories', 'href': '/stories'},
+            # {'label': 'Stories', 'href': '/stories'},  # hidden for now
             {'label': 'Past events', 'href': '/past-events'},
         ],
         'authCta': {'label': 'Log in', 'href': '/login'},

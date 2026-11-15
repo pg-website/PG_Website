@@ -13,7 +13,7 @@ export const FALLBACK_TAGLINE = 'Good games. Better company.'
 export const FALLBACK_FOOTER_LINKS: readonly PublicNavItem[] = [
   { label: 'Play', href: '/play' },
   { label: 'Community', href: '/community' },
-  { label: 'Stories', href: '/stories' },
+  // { label: 'Stories', href: '/stories' }, // hidden for now
   { label: 'Past events', href: '/past-events' },
   { label: 'Contact', href: '/contact' },
   { label: 'Privacy', href: '/privacy' },

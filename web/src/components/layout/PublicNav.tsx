@@ -12,7 +12,7 @@ import { classifyHref } from '@/components/ui/linkHref'
 export const FALLBACK_NAV_ITEMS: readonly PublicNavItem[] = [
   { label: 'Play', href: '/play' },
   { label: 'Community', href: '/community' },
-  { label: 'Stories', href: '/stories' },
+  // { label: 'Stories', href: '/stories' }, // hidden for now
   { label: 'Past events', href: '/past-events' },
 ]
 
