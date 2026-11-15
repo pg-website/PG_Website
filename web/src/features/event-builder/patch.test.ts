@@ -130,8 +130,8 @@ describe('blocker to step mapping', () => {
   })
 })
 
-describe('EV-09 experience backend gaps: tags and mode are never sent', () => {
-  it('strips tags and mode from the experience write values', () => {
+describe('EV-09 experience: mode is saved, tags (backend gap) are never sent', () => {
+  it('strips tags but keeps mode in the experience write values', () => {
     const values = {
       description: 'A great event',
       eyebrow: 'Welcome',
@@ -147,12 +147,16 @@ describe('EV-09 experience backend gaps: tags and mode are never sent', () => {
     }
     const result = toWriteValues('experience', values, [])
     expect(result).not.toHaveProperty('tags')
-    expect(result).not.toHaveProperty('mode')
+    expect(result).toHaveProperty('mode', 'social')
     expect(result).toHaveProperty('arrivalPromise', 'Walk in alone if you like.')
     expect(result).toHaveProperty('hostedArrival', true)
   })
 
-  it('adding a mode or tags is not a diff against a server response without them', () => {
+  it('a mode the author never chose (null) is not sent', () => {
+    expect(toWriteValues('experience', { description: '', mode: null }, [])).not.toHaveProperty('mode')
+  })
+
+  it('choosing a mode is a diff, adding tags is not', () => {
     const server = {
       description: '',
       eyebrow: '',
@@ -164,7 +168,7 @@ describe('EV-09 experience backend gaps: tags and mode are never sent', () => {
       hostedArrival: false,
       arrivalPromise: '',
     }
-    const withUiOnly = { ...server, mode: 'competitive', tags: ['Open to all'] }
-    expect(diffStep('experience', server, withUiOnly, [])).toEqual({})
+    expect(diffStep('experience', server, { ...server, tags: ['Open to all'] }, [])).toEqual({})
+    expect(diffStep('experience', server, { ...server, mode: 'competitive' }, [])).toEqual({ mode: 'competitive' })
   })
 })

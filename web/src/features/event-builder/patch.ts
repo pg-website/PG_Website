@@ -74,8 +74,9 @@ export function toWriteValues(
       continue
     }
     if (key === 'experience') {
-      // `tags` and `mode` are UI-only (backend gap, PLAN-003 Q3 / EV-09). Never send them.
-      if (field === 'tags' || field === 'mode') continue
+      // `tags` is UI-only (backend gap, PLAN-003 Q3 / EV-09). Never send it. A mode the author never chose is `null`.
+      if (field === 'tags') continue
+      if (field === 'mode' && value === null) continue
       out[field] = withoutBlankRows(field, value)
       continue
     }

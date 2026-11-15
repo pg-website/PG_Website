@@ -195,6 +195,7 @@ def draft_dto(event: Event) -> dict:
             'eyebrow': ex.get('eyebrow', ''), 'heading': ex.get('heading', ''),
             'body': ex.get('body', ''), 'highlights': _highlights(event), 'logistics': list(event.logistics or []),
             'faq': list(event.faq or []), 'hostedArrival': bool(glance.get('hostedArrival', False)),
+            'mode': event.event_mode,
         },
         'registration': {
             'capacity': event.capacity, 'waitlistEnabled': event.waitlist_enabled,
@@ -450,9 +451,14 @@ def parse_patch(data) -> tuple[int, dict]:
     if 'experience' in data:
         raw = _object(errs, 'experience', data['experience'],
                       {'description', 'arrivalPromise', 'eyebrow', 'heading', 'body', 'highlights', 'logistics', 'faq',
-                       'hostedArrival'})
+                       'hostedArrival', 'mode'})
         if raw is not None:
             e = {}
+            if 'mode' in raw:
+                if raw['mode'] in ('social', 'competitive'):
+                    e['mode'] = raw['mode']
+                else:
+                    errs.add('experience.mode', 'Choose one of the listed options.')
             for key, limit in (('description', 4000), ('arrivalPromise', 400), ('eyebrow', 60), ('heading', 160), ('body', 1200)):
                 if key in raw:
                     e[key] = _text(errs, f'experience.{key}', raw[key], limit)

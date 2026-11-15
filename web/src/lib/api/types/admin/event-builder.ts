@@ -59,7 +59,7 @@ const faq = z.object({ question: draftText(200), answer: draftText(1500) })
  * Experience mode: the broad feel of the event. Shown as choice cards in the builder (screen 39).
  * 'social' → Hosted social (introductions, relaxed matching).
  * 'competitive' → Competitive (rounds, clocks, standings).
- * Backend gap: this field is not yet in the E04 PATCH contract; it is stored UI-side only and noted.
+ * Stored on the event (`Event.event_mode`), read in the builder resource and written by the E04 experience PATCH.
  */
 export const EXPERIENCE_MODES = ['social', 'competitive'] as const
 export const experienceModeSchema = z.enum(EXPERIENCE_MODES)
@@ -80,7 +80,7 @@ export const experienceStepSchema = z.object({
    */
   arrivalPromise: draftText(400).optional().default(''),
   /**
-   * Experience mode choice card (screen 39). Backend gap: field not in E04; UI-only.
+   * Experience mode choice card (screen 39). Saved by the server.
    * Optional so server responses without this field still parse.
    * @see EXPERIENCE_MODES
    */
@@ -226,12 +226,10 @@ export const gameSystemPatchSchema = z
 export const basicsPatchSchema = partialStep(
   basicsStepSchema.omit({ slug: true }).extend({ slug: authoringSlugSchema.nullable() }),
 )
-/**
- * Experience PATCH excludes:
- * - `tags` — backend gap, not in E04
- * - `mode` — backend gap, UI-only
- */
-export const experiencePatchSchema = partialStep(experienceStepSchema.omit({ tags: true, mode: true }))
+/** Experience PATCH excludes `tags` (backend gap, not in E04). `mode` is saved. */
+export const experiencePatchSchema = partialStep(
+  experienceStepSchema.omit({ tags: true, mode: true }).extend({ mode: experienceModeSchema }),
+)
 
 export const updateBuilderDraftSchema = z.strictObject({
   version: writeVersionSchema,

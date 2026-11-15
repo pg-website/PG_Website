@@ -259,6 +259,9 @@ class Event(SlugLockedMixin, VersionedModel):
         max_length=20, choices=STATUSES, default="draft", db_index=True
     )
     pairing_mode = models.CharField(max_length=20, choices=PAIRING, default="none")
+    event_mode = models.CharField(
+        max_length=20, choices=[("social", "Hosted social"), ("competitive", "Competitive")], default="social"
+    )
 
     starts_at = models.DateTimeField(null=True, blank=True, db_index=True)
     ends_at = models.DateTimeField(null=True, blank=True)

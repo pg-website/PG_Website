@@ -19,7 +19,7 @@ import type { ExperienceMode } from '@/lib/api/types/admin/event-builder'
 
 // Builder step 2, Experience (EV-09, screen 39). Adds mode choice cards (Hosted social / Competitive),
 // "Arrival promise" textarea, and public tags chip input (UI-only, backend gap per PLAN-003 Q3).
-// `mode` and `tags` are never sent to the backend (patch.ts filters them out).
+// `mode` is saved with the experience PATCH; `tags` is never sent (patch.ts filters it out).
 
 interface ModeCardOption {
   value: ExperienceMode

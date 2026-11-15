@@ -53,7 +53,7 @@ MODEL_TO_BUILDER = {
     'title': 'basics.title', 'slug': 'basics.slug', 'type': 'basics.type', 'promise': 'basics.promise',
     'starts_at': 'basics.startsAt', 'ends_at': 'basics.endsAt', 'venue_name': 'basics.venueName',
     'address': 'basics.address', 'area': 'basics.area', 'city': 'basics.city', 'audience': 'basics.audience',
-    'description': 'experience.description', 'experience': 'experience.body', 'faq': 'experience.faq',
+    'description': 'experience.description', 'event_mode': 'experience.mode', 'experience': 'experience.body', 'faq': 'experience.faq',
     'logistics': 'experience.logistics', 'at_a_glance': 'experience.hostedArrival',
     'capacity': 'registration.capacity', 'waitlist_enabled': 'registration.waitlistEnabled',
     'registration_opens_at': 'registration.opensAt', 'registration_closes_at': 'registration.closesAt',
@@ -145,8 +145,8 @@ def _apply(event: Event, step: str, field: str, value) -> None:
             event.at_a_glance = {'membershipRequired': bool(glance.get('membershipRequired', False)),
                                  'hostedArrival': value}
         else:
-            attr = {'arrivalPromise': 'arrival_promise'}.get(field, field)
-            setattr(event, attr, value)  # description, arrival_promise, logistics, faq
+            attr = {'arrivalPromise': 'arrival_promise', 'mode': 'event_mode'}.get(field, field)
+            setattr(event, attr, value)  # description, arrival_promise, event_mode, logistics, faq
     elif step == 'registration':
         if field == 'membershipRequired':
             event.at_a_glance = {'membershipRequired': value, 'hostedArrival': bool(glance.get('hostedArrival', False))}
