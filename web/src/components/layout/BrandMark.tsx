@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { cn } from '@/lib/cn'
 
@@ -12,9 +13,10 @@ interface BrandMarkProps {
 }
 
 /**
- * The PG brand (ASSET-INVENTORY 4): a CSS roundel with "PG" plus the live-text wordmark "PAWN'S GAMBIT", linking home.
- * No logo file: the legacy logo is a different identity. Roundel and wordmark are decorative (`aria-hidden`); the link
- * name is "Pawn's Gambit, home" at every width, including when `compact` hides the wordmark. Server Component.
+ * The PG brand: the logo image (public/brand/logo.png, a cropped 256px copy of the master) plus the live-text wordmark
+ * "PAWN'S GAMBIT", linking home. Logo and wordmark are decorative (`aria-hidden`); the link name is "Pawn's Gambit, home"
+ * at every width, including when `compact` hides the wordmark. The logo carries its own background, so `tone` only
+ * affects the wordmark. Server Component.
  */
 export function BrandMark({ tone = 'light', compact = false }: BrandMarkProps) {
   return (
@@ -27,15 +29,14 @@ export function BrandMark({ tone = 'light', compact = false }: BrandMarkProps) {
         tone === 'dark' ? 'text-parchment' : 'text-ink',
       )}
     >
-      <span
+      <Image
+        src="/brand/logo.png"
+        alt=""
         aria-hidden="true"
-        className={cn(
-          'grid size-9 shrink-0 place-items-center rounded-full font-display text-lg leading-none tracking-tighter',
-          tone === 'dark' ? 'bg-parchment text-forest' : 'bg-forest text-parchment',
-        )}
-      >
-        PG
-      </span>
+        width={36}
+        height={36}
+        className="size-9 shrink-0 rounded-full object-cover"
+      />
       <span
         aria-hidden="true"
         className={cn(
