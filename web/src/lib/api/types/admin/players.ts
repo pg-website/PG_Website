@@ -36,6 +36,13 @@ export const adminCreatePlayerInputSchema = z.strictObject({
 })
 export type AdminCreatePlayerInput = z.infer<typeof adminCreatePlayerInputSchema>
 
+/** `POST /admin/players/{id}/password-reset`. Sets a new temporary password. Requires step-up and an idempotency key. */
+export const resetPlayerPasswordInputSchema = z.strictObject({ password: z.string().min(1).max(128) })
+export type ResetPlayerPasswordInput = z.infer<typeof resetPlayerPasswordInputSchema>
+
+export const resetPlayerPasswordResultSchema = z.object({ id: uuidSchema, resetAt: isoInstantSchema })
+export type ResetPlayerPasswordResult = z.infer<typeof resetPlayerPasswordResultSchema>
+
 export const ACCOUNT_STATUSES = ['active', 'suspended'] as const
 export const accountStatusSchema = z.enum(ACCOUNT_STATUSES)
 export type AccountStatus = z.infer<typeof accountStatusSchema>

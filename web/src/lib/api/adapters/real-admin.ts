@@ -391,6 +391,16 @@ export function createRealAdminApi(http: ApiRequester, hooks: RealAdminHooks): P
           spec('POST', '/admin/players', opts, stepped(opts, { body: input, idempotencyKey: key })),
           adminPlayersResponses.createPlayer,
         ),
+      resetPlayerPassword: (id, input, key, opts) =>
+        http.json(
+          spec(
+            'POST',
+            `/admin/players/${seg(id)}/password-reset`,
+            opts,
+            stepped(opts, { body: input, idempotencyKey: key }),
+          ),
+          adminPlayersResponses.resetPlayerPassword,
+        ),
     },
 
     payments: {

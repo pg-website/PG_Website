@@ -13,6 +13,7 @@ import type { TableColumn } from '@/components/ui/table/tableTypes'
 import { ChangeRoleAction } from '@/features/admin/players/ChangeRoleAction'
 import { EnrollInEventDialog } from '@/features/admin/players/EnrollInEventDialog'
 import { PlayerFact as Fact } from '@/features/admin/players/PlayerFact'
+import { ResetPasswordDialog } from '@/features/admin/players/ResetPasswordDialog'
 import {
   attendanceRatio,
   HISTORY_STATUS_LABEL,
@@ -160,8 +161,9 @@ export function PlayerRecordBody({ player, onRoleChanged }: { player: AdminPlaye
           <Heading level={3} id="player-actions">
             Actions
           </Heading>
-          <div className="mt-4">
+          <div className="mt-4 flex flex-wrap items-start gap-3">
             <EnrollInEventDialog player={player} />
+            <ResetPasswordDialog player={player} />
           </div>
         </Surface>
       ) : null}

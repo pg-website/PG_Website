@@ -79,6 +79,8 @@ import type {
 } from '@/lib/api/types/admin/payments'
 import type {
   AdminCreatePlayerInput,
+  ResetPlayerPasswordInput,
+  ResetPlayerPasswordResult,
   AdminPlayerDto,
   AdminPlayerRowDto,
   AdminPlayersQuery,
@@ -410,6 +412,13 @@ export interface PgAdminPlayersApi {
    * The created user will have `mustChangePassword=true` and must change their password on first login.
    */
   createPlayer(input: AdminCreatePlayerInput, key: IdempotencyKey, opts: StepUpOpts): Promise<AdminPlayerDto>
+  /** Sets a new temporary password, forces a change at next sign-in and ends the player's sessions. IK + step-up required. */
+  resetPlayerPassword(
+    id: AdminPlayerDto['id'],
+    input: ResetPlayerPasswordInput,
+    key: IdempotencyKey,
+    opts: StepUpOpts,
+  ): Promise<ResetPlayerPasswordResult>
 }
 
 // ---------- Payments (G04 to G06, screen 55; per-event list is control.listEventPayments) ----------

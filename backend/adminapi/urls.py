@@ -64,6 +64,7 @@ urlpatterns = [
     path('players', op.PlayersView.as_view(), name='admin-players'),
     path('players/<str:player_id>', op.PlayerDetailView.as_view(), name='admin-player'),
     path('players/<str:player_id>/role', op.PlayerRoleView.as_view(), name='admin-player-role'),
+    path('players/<str:player_id>/password-reset', op.PlayerPasswordResetView.as_view(), name='admin-player-password-reset'),
     path('payments', op.LedgerView.as_view(), name='admin-payments'),
     path('payments/reconcile', op.ReconcileView.as_view(), name='admin-payments-reconcile'),
     path('payments/<str:payment_id>/refund', op.RefundView.as_view(), name='admin-payment-refund'),

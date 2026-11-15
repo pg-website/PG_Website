@@ -33,6 +33,11 @@ class PlayerRoleView(AdminView):
         return run_idempotent(request, lambda: ok(ps.change_role(request, player_id, request.data)), required=True)
 
 
+class PlayerPasswordResetView(AdminView):
+    def post(self, request, player_id):
+        return run_idempotent(request, lambda: ok(ps.reset_password(request, player_id, request.data)), required=True)
+
+
 class LedgerView(AdminView):
     def get(self, request):
         paginator, items = ls.list_ledger(request, AdminPagePagination)

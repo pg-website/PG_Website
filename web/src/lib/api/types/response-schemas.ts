@@ -45,7 +45,12 @@ import {
   reconcileResultSchema,
   refundResultSchema,
 } from '@/lib/api/types/admin/payments'
-import { adminPlayerRowSchema, adminPlayerSchema, changeRoleResultSchema } from '@/lib/api/types/admin/players'
+import {
+  adminPlayerRowSchema,
+  adminPlayerSchema,
+  changeRoleResultSchema,
+  resetPlayerPasswordResultSchema,
+} from '@/lib/api/types/admin/players'
 import { previewLinkSchema } from '@/lib/api/types/admin/preview'
 import { settingsSchema } from '@/lib/api/types/admin/settings'
 import { slugCheckResultSchema } from '@/lib/api/types/admin/slug'
@@ -245,6 +250,7 @@ export const adminPlayersResponses = {
   changeRole: changeRoleResultSchema,
   /** PLAN-012 */
   createPlayer: adminPlayerSchema,
+  resetPlayerPassword: resetPlayerPasswordResultSchema,
 } as const
 
 export const adminPaymentsResponses = {

@@ -32,6 +32,7 @@ ROLES = ('player', 'admin')
 VISIBLE_FIELDS = ['phone', 'birthday', 'area', 'chessComHandle', 'fideId']
 HISTORY_MAX = 100
 ROLE_ACTION = 'player.role_change'
+PASSWORD_RESET_ACTION = 'player.password_reset'
 VIEW_ACTION = 'player.view_private'
 VIEW_AUDIT_WINDOW = timedelta(minutes=5)  # one private-view audit row per admin+player per window (limits refetch flood)
 MIN_PHONE_QUERY_DIGITS = 4
@@ -246,6 +247,39 @@ def create_player(request, data) -> dict:
         raise ValidationFailed(fields={'email': ['A player with this email already exists.']}) from None
 
     return get_player(request, user.pk)
+
+
+def reset_password(request, player_id, data) -> dict:
+    """Admin sets a new temporary password for a player (step-up protected, audited, ends the player's sessions)."""
+    from accounts import passwords
+    from accounts.services import revoke_all_for_user
+
+    data = require_object(data)
+    c = Collector(data)
+    c.reject_unknown({'password'})
+    password_raw = data.get('password')
+    pw_message = passwords.check_length(password_raw)
+    if pw_message:
+        c.add('password', pw_message)
+    c.done()
+
+    pk = _parse_id(player_id)
+    if User.objects.filter(pk=pk).first() is None:
+        raise NotFound()
+    require_step_up(request)  # before any change; single-use grant
+    with transaction.atomic():
+        user = User.objects.select_for_update().filter(pk=pk).first()
+        if user is None:
+            raise NotFound()
+        if passwords.is_weak(password_raw, user.email):
+            raise ValidationFailed(fields={'password': [WeakPassword.default_detail]})
+        user.set_password(password_raw)
+        user.must_change_password = True
+        user.save(update_fields=['password', 'must_change_password', 'updated_at'])
+        revoke_all_for_user(user.pk)
+        audit.write(request, action=PASSWORD_RESET_ACTION, object_type='player', object_id=user.pk,
+                    before=None, after={'mustChangePassword': True})
+        return {'id': str(user.pk), 'resetAt': iso(user.updated_at)}
 
 
 def change_role(request, player_id, data) -> dict:
