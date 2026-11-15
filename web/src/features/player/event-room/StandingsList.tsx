@@ -32,6 +32,9 @@ export function StandingsList({ rows, myPlace }: { rows: readonly StandingRow[];
                   <span className="text-right font-mono text-sm">
                     {row.score} pts
                     <span className="block text-muted">{row.rounds} played</span>
+                    {row.buchholz === undefined ? null : (
+                      <span className="block text-muted">Buchholz {row.buchholz}</span>
+                    )}
                   </span>
                 }
               />

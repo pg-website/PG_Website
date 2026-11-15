@@ -15,6 +15,8 @@ export const standingRowSchema = z.object({
   rounds: z.int().min(0).max(100),
   /** Rating shown in the pool that the event is rated in, when the player allows it. */
   rating: z.object({ pool: ratingPoolSchema, value: z.int().min(0).max(4000) }).nullable(),
+  /** First tie-break: sum of the opponents' scores. Optional so older responses and stored archives still parse. */
+  buchholz: z.number().min(0).max(20000).optional(),
 })
 export type StandingRow = z.infer<typeof standingRowSchema>
 

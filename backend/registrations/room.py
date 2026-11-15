@@ -22,6 +22,7 @@ from core.responses import iso
 from core.validation import Collector, MISSING, require_object
 
 from . import conf
+from . import tiebreaks as tb
 from .dto import IdentityBook, pool_of, venue_text
 from .models import Pairing, Registration, Round
 from ratings.models import RatingLedgerEntry
@@ -206,35 +207,28 @@ def standings(event, rounds) -> list[dict]:
     """Public standings from FINAL results only. Identity toggles are applied; no ids are included."""
     pairings = list(Pairing.objects.filter(round__in=rounds))
     book = IdentityBook({p.white_id for p in pairings} | {p.black_id for p in pairings if p.black_id}, pool_of(event))
-    points: dict = {}
     played: dict = {}
+    finals = []
     for p in pairings:
         for uid in (p.white_id, p.black_id):
             if uid is not None:
-                points.setdefault(uid, 0.0)
                 played.setdefault(uid, 0)
         if p.result_state != 'final':
             continue
         played[p.white_id] += 1
-        if p.is_bye:
-            points[p.white_id] += 1
-            continue
-        played[p.black_id] += 1
-        if p.outcome == 'white':
-            points[p.white_id] += 1
-        elif p.outcome == 'black':
-            points[p.black_id] += 1
-        else:
-            points[p.white_id] += 0.5
-            points[p.black_id] += 0.5
-    ordered = sorted(points, key=lambda uid: (-points[uid], book.name_key(uid), str(uid)))[:MAX_STANDINGS]
-    rows, last_score, last_place = [], None, 0
-    for index, uid in enumerate(ordered, start=1):
-        place = last_place if points[uid] == last_score else index
-        last_score, last_place = points[uid], place
+        if not p.is_bye:
+            played[p.black_id] += 1
+        finals.append(tb.Game(p.white_id, None if p.is_bye else p.black_id, p.outcome))
+    points = tb.score_of(finals, played)
+    breaks = tb.compute(finals, played)
+    ordered = sorted(played, key=lambda uid: (-points[uid], *breaks[uid].key(), book.name_key(uid), str(uid)))
+    ordered = ordered[:MAX_STANDINGS]
+    places = tb.place_numbers(ordered, points, breaks)
+    rows = []
+    for uid, place in zip(ordered, places):
         identity = book.get(uid)
         rows.append({'place': place, 'identity': identity, 'score': points[uid], 'rounds': played[uid],
-                     'rating': identity['rating'], '_uid': uid})
+                     'rating': identity['rating'], 'buchholz': breaks[uid].buchholz, '_uid': uid})
     return rows
 
 
