@@ -21,8 +21,13 @@ def public_events():
     return Event.objects.exclude(status='draft')
 
 
+def _with_card_media(qs):
+    """Cards show `cover`, or the first gallery photo when the builder only filled the gallery."""
+    return qs.select_related('cover', 'media').prefetch_related(_collection_prefetch('media__'))
+
+
 def upcoming_events(*, q=None, type=None, audience=None, free=None, city=None):
-    qs = public_events().filter(status__in=UPCOMING_STATUSES, ends_at__gte=timezone.now()).select_related('cover')
+    qs = _with_card_media(public_events().filter(status__in=UPCOMING_STATUSES, ends_at__gte=timezone.now()))
     if q:
         qs = qs.filter(Q(title__icontains=q) | Q(promise__icontains=q))
     if type:
@@ -39,7 +44,7 @@ def upcoming_events(*, q=None, type=None, audience=None, free=None, city=None):
 
 
 def past_events(*, q=None, type=None):
-    qs = public_events().filter(status='completed').select_related('cover')
+    qs = _with_card_media(public_events().filter(status='completed'))
     if q:
         qs = qs.filter(Q(title__icontains=q) | Q(promise__icontains=q))
     if type:

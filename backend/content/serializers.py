@@ -75,6 +75,15 @@ def _places_left_hint(event: Event):
     return min(event.places_left, 100000)
 
 
+def _card_cover(event: Event):
+    if event.cover is not None:
+        return media_dto(event.cover)
+    if event.media_id:
+        for item in event.media.items.all():  # prefetched and ordered by the selectors
+            return media_dto(item.asset)
+    return None
+
+
 def event_card_dto(event: Event):
     return {
         'slug': event.slug,
@@ -92,7 +101,7 @@ def event_card_dto(event: Event):
         'rated': event.rated,
         'firstTimerCount': event.first_timer_count,
         'placesLeftHint': _places_left_hint(event),
-        'cover': media_dto(event.cover),
+        'cover': _card_cover(event),
         'archivePublished': event.archive_published,
         'version': event.version,
     }
