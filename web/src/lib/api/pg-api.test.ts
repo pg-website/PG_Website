@@ -253,6 +253,7 @@ describe('admin schema registry covers every method (runtime)', () => {
         'completeEvent',
         'createDraft',
         'deleteEvent',
+        'enrollPlayer',
         'getEvent',
         'getEventTypes',
         'listEvents',
@@ -263,11 +264,17 @@ describe('admin schema registry covers every method (runtime)', () => {
       ].sort(),
     )
     expect(methodsOf(adminPaymentsResponses)).toEqual(['listLedger', 'reconcile', 'refund'])
-    expect(methodsOf(adminPlayersResponses)).toEqual(['changeRole', 'getPlayer', 'listPlayers'])
+    expect(methodsOf(adminPlayersResponses)).toEqual([
+      'changeRole',
+      'createPlayer',
+      'getPlayer',
+      'listPlayers',
+      'resetPlayerPassword',
+    ])
     expect(methodsOf(adminSettingsResponses)).toEqual(['getSettings', 'updateSettings'])
   })
 
-  it('counts the registered payload methods (plus deleteAsset and exportAudit without payload = 72 methods)', () => {
+  it('counts the registered payload methods (plus deleteAsset and exportAudit without payload = 75 methods)', () => {
     const registered =
       countMethods(adminDashboardResponses) +
       countMethods(adminEventsResponses) +
@@ -280,7 +287,7 @@ describe('admin schema registry covers every method (runtime)', () => {
       countMethods(adminPlayersResponses) +
       countMethods(adminPaymentsResponses) +
       countMethods(adminSettingsResponses)
-    expect(registered + 2).toBe(72)
+    expect(registered + 2).toBe(75)
   })
 })
 

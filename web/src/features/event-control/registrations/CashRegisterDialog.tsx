@@ -65,12 +65,31 @@ interface ConfirmSummaryProps {
   eventTitle: string
   eventPricePaise: number | undefined
   amountRupees: string
+  free: boolean
 }
 
 /** Confirmation view: player, event, published fee and entered amount. */
-function ConfirmSummary({ playerName, eventTitle, eventPricePaise, amountRupees }: ConfirmSummaryProps) {
+function ConfirmSummary({ playerName, eventTitle, eventPricePaise, amountRupees, free }: ConfirmSummaryProps) {
   const enteredPaise = rupeesToPaise(amountRupees)
   const feeMatches = eventPricePaise === undefined || enteredPaise === eventPricePaise
+  if (free) {
+    return (
+      <dl className="grid gap-3 text-sm">
+        <div className="flex justify-between gap-4">
+          <dt className="font-semibold text-ink-soft">Player</dt>
+          <dd className="text-ink">{playerName}</dd>
+        </div>
+        <div className="flex justify-between gap-4">
+          <dt className="font-semibold text-ink-soft">Event</dt>
+          <dd className="text-ink">{eventTitle}</dd>
+        </div>
+        <div className="flex justify-between gap-4">
+          <dt className="font-semibold text-ink-soft">Entry fee</dt>
+          <dd className="text-ink">Free</dd>
+        </div>
+      </dl>
+    )
+  }
   return (
     <dl className="grid gap-3 text-sm">
       <div className="flex justify-between gap-4">
@@ -115,6 +134,8 @@ export interface CashRegisterDialogProps {
 export function CashRegisterDialog({ eventId, overview, onSuccess }: CashRegisterDialogProps) {
   const api = useApi()
   const toast = useToast()
+  // Free events have nothing to collect: the same dialog enrolls the player directly (admin_enrolled).
+  const free = overview.pricePaise === 0
 
   // dialog open state
   const [open, setOpen] = useState(false)
@@ -162,11 +183,12 @@ export function CashRegisterDialog({ eventId, overview, onSuccess }: CashRegiste
 
   // ---- derived state (rule 5.1: derive during render, not in effects) ----
   const parsedPaise = rupeesToPaise(amountRupees)
-  const amountValid = parsedPaise !== null && parsedPaise > 0
-  const showAmountError = amountRupees.trim() !== '' && !amountValid
+  const amountValid = free || (parsedPaise !== null && parsedPaise > 0)
+  const showAmountError = !free && amountRupees.trim() !== '' && !amountValid
   const confirmEnabled = selectedPlayer !== null && amountValid && !isPending
   const players = searchQuery.data?.items ?? []
-  const errorCopy = error === null ? null : copyFor(error, { action: 'register this player with cash' })
+  const errorCopy =
+    error === null ? null : copyFor(error, { action: free ? 'enroll this player' : 'register this player with cash' })
 
   // ---- event handlers ----
 
@@ -200,19 +222,25 @@ export function CashRegisterDialog({ eventId, overview, onSuccess }: CashRegiste
   }
 
   const handleConfirm = () => {
-    if (selectedPlayer === null || parsedPaise === null) return
+    if (selectedPlayer === null || (!free && parsedPaise === null)) return
     setError(null)
     // useTransition for submit — keeps UI responsive (rule 6.11)
     startTransition(async () => {
       try {
-        await api.admin.control.cashRegisterPlayer(
-          eventId,
-          { playerId: selectedPlayer.id, amountPaise: parsedPaise },
-          intentKey,
-        )
+        if (free) {
+          await api.admin.events.enrollPlayer(eventId, { playerId: selectedPlayer.id }, intentKey)
+        } else if (parsedPaise !== null) {
+          await api.admin.control.cashRegisterPlayer(
+            eventId,
+            { playerId: selectedPlayer.id, amountPaise: parsedPaise },
+            intentKey,
+          )
+        }
         setOpen(false)
         onSuccess()
-        toast.success(`${selectedPlayer.name} registered with cash payment`)
+        toast.success(
+          free ? `${selectedPlayer.name} enrolled` : `${selectedPlayer.name} registered with cash payment`,
+        )
       } catch (err) {
         setError(err)
       }
@@ -257,10 +285,10 @@ export function CashRegisterDialog({ eventId, overview, onSuccess }: CashRegiste
           size="lg"
           disabled={!confirmEnabled}
           loading={isPending}
-          loadingLabel="Registering…"
+          loadingLabel={free ? 'Enrolling…' : 'Registering…'}
           onClick={handleConfirm}
         >
-          Confirm cash payment
+          {free ? 'Confirm enrollment' : 'Confirm cash payment'}
         </Button>
       </>
     )
@@ -268,13 +296,17 @@ export function CashRegisterDialog({ eventId, overview, onSuccess }: CashRegiste
   return (
     <>
       <Button variant="secondary" onClick={openDialog}>
-        Register with cash
+        {free ? 'Enroll player' : 'Register with cash'}
       </Button>
       <Dialog
         open={open}
         onOpenChange={setOpen}
-        title="Register with cash"
-        descriptionText="Confirm a player's cash payment at the desk. The registration is marked confirmed immediately."
+        title={free ? 'Enroll player' : 'Register with cash'}
+        descriptionText={
+          free
+            ? 'Add a player to this free event. The registration is marked confirmed immediately.'
+            : "Confirm a player's cash payment at the desk. The registration is marked confirmed immediately."
+        }
         dismissible={!isPending}
         footer={footer}
         size="md"
@@ -312,20 +344,22 @@ export function CashRegisterDialog({ eventId, overview, onSuccess }: CashRegiste
               </div>
             ) : null}
 
-            <Field
-              label="Amount collected (₹)"
-              hint="Whole rupees or up to 2 decimal places (e.g. 500 or 500.50)."
-              error={showAmountError ? 'Enter a valid amount greater than zero' : undefined}
-            >
-              <Input
-                inputMode="decimal"
-                value={amountRupees}
-                onChange={(event) => {
-                  setAmountRupees(event.target.value)
-                }}
-                placeholder="e.g. 500"
-              />
-            </Field>
+            {free ? null : (
+              <Field
+                label="Amount collected (₹)"
+                hint="Whole rupees or up to 2 decimal places (e.g. 500 or 500.50)."
+                error={showAmountError ? 'Enter a valid amount greater than zero' : undefined}
+              >
+                <Input
+                  inputMode="decimal"
+                  value={amountRupees}
+                  onChange={(event) => {
+                    setAmountRupees(event.target.value)
+                  }}
+                  placeholder="e.g. 500"
+                />
+              </Field>
+            )}
           </div>
         ) : (
           <div className="grid gap-4">
@@ -334,6 +368,7 @@ export function CashRegisterDialog({ eventId, overview, onSuccess }: CashRegiste
               eventTitle={overview.title}
               eventPricePaise={overview.pricePaise}
               amountRupees={amountRupees}
+              free={free}
             />
             {errorCopy !== null ? (
               <Banner tone="danger" title={errorCopy.title} live="alert">

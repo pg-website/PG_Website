@@ -484,7 +484,7 @@ def overview(event: Event) -> dict:
     caps = eb.capabilities(event)
     return {
         'eventId': str(event.pk), 'slug': event.slug, 'title': event.title, 'status': event.status,
-        'startsAt': iso(event.starts_at),
+        'startsAt': iso(event.starts_at), 'pricePaise': event.price_paise,
         'summary': {'confirmed': agg['confirmed'], 'waitlist': agg['waitlist'], 'firstTimers': firsts['total'],
                     'checkedIn': agg['checked_in'], 'capacity': event.capacity},
         'arrival': {'checkedIn': agg['checked_in'], 'expected': agg['confirmed'],
