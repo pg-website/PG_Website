@@ -39,9 +39,7 @@ const gameSystem = {
 
 function issues(schema: ZodType, value: unknown): { path: string; message: string }[] {
   const result = schema.safeParse(value)
-  return result.success
-    ? []
-    : result.error.issues.map((issue) => ({ path: issue.path.join('.'), message: issue.message }))
+  return result.success ? [] : result.error.issues.map((issue) => ({ path: issue.path.join('.'), message: issue.message }))
 }
 
 describe('basics form schema', () => {
@@ -72,7 +70,9 @@ describe('basics form schema', () => {
   it('requires the end to be strictly after the start', () => {
     const message = { path: 'endsAt', message: 'The end must be after the start.' }
     expect(issues(STEP_FORM_SCHEMAS.basics, { ...basics, endsAt: basics.startsAt })).toContainEqual(message)
-    expect(issues(STEP_FORM_SCHEMAS.basics, { ...basics, endsAt: '2026-12-01T17:00:00+05:30' })).toContainEqual(message)
+    expect(
+      issues(STEP_FORM_SCHEMAS.basics, { ...basics, endsAt: '2026-12-01T17:00:00+05:30' }),
+    ).toContainEqual(message)
   })
 
   it('does not report an end rule when the start is still missing', () => {
@@ -81,9 +81,9 @@ describe('basics form schema', () => {
   })
 
   it('rejects a slug that is not a slug', () => {
-    expect(
-      issues(STEP_FORM_SCHEMAS.basics, { ...basics, slug: { lock: 'editable', value: 'Not A Slug' } }),
-    ).toContainEqual(expect.objectContaining({ path: 'slug.value' }))
+    expect(issues(STEP_FORM_SCHEMAS.basics, { ...basics, slug: { lock: 'editable', value: 'Not A Slug' } })).toContainEqual(
+      expect.objectContaining({ path: 'slug.value' }),
+    )
   })
 })
 
@@ -105,9 +105,7 @@ describe('registration form schema', () => {
   })
 
   it('does not compare a window with only one side set', () => {
-    expect(issues(STEP_FORM_SCHEMAS.registration, { ...registration, closesAt: '2026-11-20T10:00:00+05:30' })).toEqual(
-      [],
-    )
+    expect(issues(STEP_FORM_SCHEMAS.registration, { ...registration, closesAt: '2026-11-20T10:00:00+05:30' })).toEqual([])
   })
 
   it('rejects a zero capacity', () => {
@@ -127,7 +125,9 @@ describe('game system form schema', () => {
     const message = { path: 'rounds', message: 'Set the number of rounds.' }
     for (const pairingMode of ['swiss', 'round_robin'] as const) {
       expect(issues(STEP_FORM_SCHEMAS.gameSystem, { ...gameSystem, pairingMode, rounds: null })).toContainEqual(message)
-      expect(STEP_FORM_SCHEMAS.gameSystem.safeParse({ ...gameSystem, pairingMode, rounds: 5 }).success).toBe(true)
+      expect(
+        STEP_FORM_SCHEMAS.gameSystem.safeParse({ ...gameSystem, pairingMode, rounds: 5 }).success,
+      ).toBe(true)
     }
     expect(STEP_FORM_SCHEMAS.gameSystem.safeParse({ ...gameSystem, pairingMode: 'social_balanced' }).success).toBe(true)
   })
@@ -153,9 +153,7 @@ describe('experience, payment, media and communications form schemas', () => {
   it('caps highlights at eight and defaults the optional fields', () => {
     const row = { title: 'Free tea', body: 'Chai all evening' }
     expect(STEP_FORM_SCHEMAS.experience.safeParse({ ...experience, highlights: Array(8).fill(row) }).success).toBe(true)
-    expect(STEP_FORM_SCHEMAS.experience.safeParse({ ...experience, highlights: Array(9).fill(row) }).success).toBe(
-      false,
-    )
+    expect(STEP_FORM_SCHEMAS.experience.safeParse({ ...experience, highlights: Array(9).fill(row) }).success).toBe(false)
     const parsed = STEP_FORM_SCHEMAS.experience.parse(experience) as { arrivalPromise: string; mode: null }
     expect(parsed.arrivalPromise).toBe('')
     expect(parsed.mode).toBeNull()
@@ -194,9 +192,7 @@ describe('experience, payment, media and communications form schemas', () => {
       checkin_open: true,
       pairing_published: true,
     }
-    expect(STEP_FORM_SCHEMAS.communications.safeParse({ triggers: missingOne, channels: ['email'] }).success).toBe(
-      false,
-    )
+    expect(STEP_FORM_SCHEMAS.communications.safeParse({ triggers: missingOne, channels: ['email'] }).success).toBe(false)
     expect(STEP_FORM_SCHEMAS.communications.safeParse({ triggers: { ...triggers, confirmation: 'yes' } }).success).toBe(
       false,
     )

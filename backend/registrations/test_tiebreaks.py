@@ -33,12 +33,12 @@ class TieBreakTests(SimpleTestCase):
     def test_hand_worked_four_player_round_robin(self):
         _, points, breaks = order(PLAYERS, FOUR_PLAYERS)
         self.assertEqual(points, {'A': 2.5, 'B': 1.5, 'C': 1.5, 'D': 0.5})
-        got = {p: (t.buchholz, t.buchholz_cut1, t.buchholz_cut2, t.sonneborn_berger) for p, t in breaks.items()}
-        self.assertEqual(got, {'A': (3.5, 3.0, 1.5, 2.75), 'B': (4.5, 4.0, 2.5, 1.25), 'C': (4.5, 4.0, 2.5, 2.25), 'D': (5.5, 4.0, 2.5, 0.75)})
+        got = {p: (t.buchholz, t.sonneborn_berger, t.wins) for p, t in breaks.items()}
+        self.assertEqual(got, {'A': (3.5, 2.75, 2), 'B': (4.5, 1.25, 1), 'C': (4.5, 2.25, 0), 'D': (5.5, 0.75, 0)})
 
-    def test_equal_points_buchholz_and_cuts_fall_to_sonneborn_berger(self):
+    def test_equal_points_and_buchholz_fall_to_sonneborn_berger(self):
         ranked, _, _ = order(PLAYERS, FOUR_PLAYERS)
-        self.assertEqual(ranked, ['A', 'C', 'B', 'D'])  # B and C: 1.5 pts, same Buchholz (4.5), same cuts (3.0, 1.5); C wins on SB 2.25 vs 1.25
+        self.assertEqual(ranked, ['A', 'C', 'B', 'D'])  # B and C: 1.5 pts, Buchholz 4.5; C wins on SB 2.25 vs 1.25
 
     def test_buchholz_decides_before_sonneborn_berger(self):
         # X, Y, Z all finish on 1.5. Y has the highest Buchholz (6.5) so ranks first among them; X and Z tie on Buchholz
@@ -53,35 +53,33 @@ class TieBreakTests(SimpleTestCase):
         self.assertEqual((breaks['X'].sonneborn_berger, breaks['Z'].sonneborn_berger), (1.75, 1.25))
         self.assertEqual(ranked, ['S', 'Y', 'X', 'Z', 'W'])
 
-    def test_cut_tiebreaks_decide_before_sonneborn_berger(self):
+    def test_wins_is_the_third_tie_break_after_buchholz_and_sonneborn_berger(self):
         from registrations.tiebreaks import TieBreaks
-        base = TieBreaks(buchholz=4.0, buchholz_cut1=3.0, buchholz_cut2=2.0, sonneborn_berger=2.0)
-        more_sb = TieBreaks(buchholz=4.0, buchholz_cut1=3.0, buchholz_cut2=2.0, sonneborn_berger=3.0)
-        more_cut2 = TieBreaks(buchholz=4.0, buchholz_cut1=3.0, buchholz_cut2=2.5, sonneborn_berger=0.0)
-        more_cut1 = TieBreaks(buchholz=4.0, buchholz_cut1=3.5, buchholz_cut2=0.0, sonneborn_berger=0.0)
-        more_bh = TieBreaks(buchholz=5.0, buchholz_cut1=0.0, buchholz_cut2=0.0, sonneborn_berger=0.0)
-        self.assertLess(more_sb.key(), base.key())
-        self.assertLess(more_cut2.key(), more_sb.key())
-        self.assertLess(more_cut1.key(), more_cut2.key())
-        self.assertLess(more_bh.key(), more_cut1.key())
+        base = TieBreaks(buchholz=4.0, sonneborn_berger=2.0, wins=1)
+        more_wins = TieBreaks(buchholz=4.0, sonneborn_berger=2.0, wins=2)
+        more_sb = TieBreaks(buchholz=4.0, sonneborn_berger=3.0, wins=0)
+        more_bh = TieBreaks(buchholz=5.0, sonneborn_berger=0.0, wins=0)
+        self.assertLess(more_wins.key(), base.key())
+        self.assertLess(more_sb.key(), more_wins.key())
+        self.assertLess(more_bh.key(), more_sb.key())
 
     def test_a_full_tie_falls_through_to_the_callers_final_key(self):
         games = [Game('A', 'B', 'draw'), Game('C', 'D', 'draw')]
         ranked, _, _ = order(['A', 'B', 'C', 'D'], games)
         self.assertEqual(ranked, ['A', 'B', 'C', 'D'])
 
-    def test_bye_counts_as_a_virtual_opponent_on_own_score(self):
+    def test_bye_counts_as_a_win_and_a_virtual_opponent_on_own_score(self):
         games = [Game('E', None, None), Game('A', 'B', 'draw')]
         _, _, breaks = order(['A', 'B', 'E'], games)
         e = breaks['E']
-        self.assertEqual((e.buchholz, e.buchholz_cut1, e.buchholz_cut2, e.sonneborn_berger), (1.0, 0.0, 0.0, 1.0))
+        self.assertEqual((e.buchholz, e.sonneborn_berger, e.wins), (1.0, 1.0, 1))
         a = breaks['A']
-        self.assertEqual((a.buchholz, a.buchholz_cut1, a.buchholz_cut2, a.sonneborn_berger), (0.5, 0.0, 0.0, 0.25))
+        self.assertEqual((a.buchholz, a.sonneborn_berger, a.wins), (0.5, 0.25, 0))
 
     def test_player_with_no_final_games_scores_zero(self):
         _, points, breaks = order(['A', 'B', 'Z'], [Game('A', 'B', 'white')])
         self.assertEqual(points['Z'], 0.0)
-        self.assertEqual((breaks['Z'].buchholz, breaks['Z'].buchholz_cut1, breaks['Z'].buchholz_cut2, breaks['Z'].sonneborn_berger), (0.0, 0.0, 0.0, 0.0))
+        self.assertEqual((breaks['Z'].buchholz, breaks['Z'].sonneborn_berger, breaks['Z'].wins), (0.0, 0.0, 0))
 
 
 class PlaceTests(SimpleTestCase):

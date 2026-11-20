@@ -113,9 +113,9 @@ describe('validStepKey', () => {
 
   it('does not leak a pending edit into another step', () => {
     const pending: PendingPatch = { basics: { title: 'Renamed' } }
-    expect(
-      validSteps({ experience: { ...draft.experience, highlights: Array(9).fill({ title: 't', body: 'b' }) } }),
-    ).not.toContain('experience')
+    expect(validSteps({ experience: { ...draft.experience, highlights: Array(9).fill({ title: 't', body: 'b' }) } })).not.toContain(
+      'experience',
+    )
     expect(validSteps({}, pending)).toContain('experience')
   })
 
@@ -123,9 +123,7 @@ describe('validStepKey', () => {
     expect(validSteps({ gameSystem: { ...draft.gameSystem, pairingMode: 'swiss', rounds: null } })).not.toContain(
       'game_system',
     )
-    expect(validSteps({ gameSystem: { ...draft.gameSystem, pairingMode: 'swiss', rounds: 5 } })).toContain(
-      'game_system',
-    )
+    expect(validSteps({ gameSystem: { ...draft.gameSystem, pairingMode: 'swiss', rounds: 5 } })).toContain('game_system')
     expect(validSteps({ registration: { ...draft.registration, capacity: null } })).toContain('registration')
   })
 

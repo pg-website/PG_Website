@@ -31,6 +31,95 @@ const SEARCH_MIN = 2
 const CANCEL_BTN_CLASS =
   'inline-flex min-h-control min-w-0 items-center justify-center rounded-public border border-forest bg-transparent px-6 py-3 text-center type-button text-forest hover:bg-line'
 
+// ---- Sub-components (defined OUTSIDE CashRegisterDialog — rule 5.4) ----
+
+interface PlayerResultItemProps {
+  player: AdminPlayerRowDto
+  selected: boolean
+  onSelect: (player: AdminPlayerRowDto) => void
+}
+
+/** One player row in the search results list. */
+function PlayerResultItem({ player, selected, onSelect }: PlayerResultItemProps) {
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        onSelect(player)
+      }}
+      aria-pressed={selected}
+      className={[
+        'w-full rounded-public border px-3 py-2 text-left text-sm transition-colors',
+        selected
+          ? 'border-forest bg-forest/10 text-ink'
+          : 'border-line bg-transparent text-ink hover:border-forest/40',
+      ].join(' ')}
+    >
+      <span className="block font-semibold">{player.name}</span>
+      <span className="block text-xs text-ink-soft">{player.email}</span>
+    </button>
+  )
+}
+
+interface ConfirmSummaryProps {
+  playerName: string
+  eventTitle: string
+  eventPricePaise: number | undefined
+  amountRupees: string
+  free: boolean
+}
+
+/** Confirmation view: player, event, published fee and entered amount. */
+function ConfirmSummary({ playerName, eventTitle, eventPricePaise, amountRupees, free }: ConfirmSummaryProps) {
+  const enteredPaise = rupeesToPaise(amountRupees)
+  const feeMatches = eventPricePaise === undefined || enteredPaise === eventPricePaise
+  if (free) {
+    return (
+      <dl className="grid gap-3 text-sm">
+        <div className="flex justify-between gap-4">
+          <dt className="font-semibold text-ink-soft">Player</dt>
+          <dd className="text-ink">{playerName}</dd>
+        </div>
+        <div className="flex justify-between gap-4">
+          <dt className="font-semibold text-ink-soft">Event</dt>
+          <dd className="text-ink">{eventTitle}</dd>
+        </div>
+        <div className="flex justify-between gap-4">
+          <dt className="font-semibold text-ink-soft">Entry fee</dt>
+          <dd className="text-ink">Free</dd>
+        </div>
+      </dl>
+    )
+  }
+  return (
+    <dl className="grid gap-3 text-sm">
+      <div className="flex justify-between gap-4">
+        <dt className="font-semibold text-ink-soft">Player</dt>
+        <dd className="text-ink">{playerName}</dd>
+      </div>
+      <div className="flex justify-between gap-4">
+        <dt className="font-semibold text-ink-soft">Event</dt>
+        <dd className="text-ink">{eventTitle}</dd>
+      </div>
+      {eventPricePaise !== undefined ? (
+        <div className="flex justify-between gap-4">
+          <dt className="font-semibold text-ink-soft">Published fee</dt>
+          <dd className="text-ink">{formatInr(eventPricePaise, { zero: 'amount' })}</dd>
+        </div>
+      ) : null}
+      <div className="flex justify-between gap-4">
+        <dt className="font-semibold text-ink-soft">Amount collected</dt>
+        <dd className={feeMatches ? 'text-ink' : 'text-warning-ink font-semibold'}>
+          {enteredPaise !== null ? formatInr(enteredPaise, { zero: 'amount' }) : amountRupees}
+        </dd>
+      </div>
+      {!feeMatches ? (
+        <p className="text-xs text-warning-ink">The collected amount differs from the published entry fee.</p>
+      ) : null}
+    </dl>
+  )
+}
+
 // ---- Main component ----
 
 export interface CashRegisterDialogProps {
@@ -147,7 +236,9 @@ export function CashRegisterDialog({ eventId, overview, onSuccess }: CashRegiste
         }
         setOpen(false)
         onSuccess()
-        toast.success(free ? `${selectedPlayer.name} enrolled` : `${selectedPlayer.name} registered with cash payment`)
+        toast.success(
+          free ? `${selectedPlayer.name} enrolled` : `${selectedPlayer.name} registered with cash payment`,
+        )
       } catch (err) {
         setError(err)
       }
