@@ -26,7 +26,7 @@ export function AssetTile({ asset, selected, onClick }: AssetTileProps) {
       {missingAlt && (
         <span
           aria-label="Missing alt text"
-          className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-warning text-xs font-bold text-white"
+          className="text-white absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-warning text-xs font-bold"
           title="Alt text missing"
         >
           !

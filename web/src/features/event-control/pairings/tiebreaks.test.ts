@@ -50,8 +50,15 @@ describe('computeTieBreaks', () => {
   it('matches the hand-worked four-player example (same numbers as the backend test)', () => {
     const { points, breaks } = rank(PLAYERS, FOUR_PLAYERS)
     expect(Object.fromEntries(points)).toEqual({ A: 2.5, B: 1.5, C: 1.5, D: 0.5 })
-    const got = Object.fromEntries([...breaks].map(([p, t]) => [p, [t.buchholz, t.buchholzCut1, t.buchholzCut2, t.sonnebornBerger]]))
-    expect(got).toEqual({ A: [3.5, 3.0, 1.5, 2.75], B: [4.5, 4.0, 2.5, 1.25], C: [4.5, 4.0, 2.5, 2.25], D: [5.5, 4.0, 2.5, 0.75] })
+    const got = Object.fromEntries(
+      [...breaks].map(([p, t]) => [p, [t.buchholz, t.buchholzCut1, t.buchholzCut2, t.sonnebornBerger]]),
+    )
+    expect(got).toEqual({
+      A: [3.5, 3.0, 1.5, 2.75],
+      B: [4.5, 4.0, 2.5, 1.25],
+      C: [4.5, 4.0, 2.5, 2.25],
+      D: [5.5, 4.0, 2.5, 0.75],
+    })
   })
 
   it('breaks an equal-points, equal-Buchholz, equal-cuts tie on Sonneborn-Berger', () => {

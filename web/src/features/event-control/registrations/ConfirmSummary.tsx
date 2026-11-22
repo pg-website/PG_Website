@@ -49,7 +49,7 @@ export function ConfirmSummary({ playerName, eventTitle, eventPricePaise, amount
       ) : null}
       <div className="flex justify-between gap-4">
         <dt className="font-semibold text-ink-soft">Amount collected</dt>
-        <dd className={feeMatches ? 'text-ink' : 'text-warning-ink font-semibold'}>
+        <dd className={feeMatches ? 'text-ink' : 'font-semibold text-warning-ink'}>
           {enteredPaise !== null ? formatInr(enteredPaise, { zero: 'amount' }) : amountRupees}
         </dd>
       </div>
