@@ -5,7 +5,7 @@ import { FormField } from '@/components/ui/form/FormField'
 import { Heading } from '@/components/ui/Heading'
 import { useStepForm } from '@/features/event-builder/context'
 import type { BuilderStepProps } from '@/features/event-builder/types'
-import { AssetListField } from '@/features/media/AssetListField'
+import { AssetListField } from '@/components/admin/AssetListField'
 import type { MediaStep as MediaValues } from '@/lib/api/types/admin/event-builder'
 
 // Builder step 6: the event's images (PLAN-010). An ordered list of assets; the first is the cover. One image is

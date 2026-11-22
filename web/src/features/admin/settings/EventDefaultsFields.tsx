@@ -3,7 +3,7 @@
 import { Controller, type UseFormReturn } from 'react-hook-form'
 import { Input } from '@/components/ui/form/Input'
 import { Select } from '@/components/ui/form/Select'
-import { PAIRING_MODE_LABEL } from '@/features/event-control/overview/overview-labels'
+import { PAIRING_MODE_LABEL } from '@/lib/format/event-labels'
 import type { SettingsDto } from '@/lib/api/types/admin/settings'
 import { EVENT_TYPES, PAIRING_MODES, type EventType } from '@/lib/api/types/event-state'
 import { SettingField } from '@/features/admin/settings/SettingField'

@@ -8,7 +8,7 @@
 //    locations that satisfy the same rule).
 // 3. A module that starts with 'use client' may not reach a server-only module through value imports, however deep.
 //    This is the transitive walk the ESLint rule (direct imports only) cannot do.
-// 4. Dynamic (public) pages (a `[param]` folder) validate the param (isValidSlug / isValidEntityId) before the first call
+// 4. Dynamic (public) pages (a `[param]` folder) validate the param (isValidSlug / isValidEntityId / isValidPublicId) before the first call
 //    into lib/data/public inside each function, and call notFound() (M13). Heuristic: textual order within a top-level
 //    function; the real guarantee is the lint rule on serverGet plus the e2e 404 tests.
 //
@@ -236,11 +236,11 @@ function checkParamValidation(m: Module): string[] {
     const calls = [...dataNames].map((n) => chunk.search(new RegExp(`\\b${n}\\s*\\(`))).filter((i) => i >= 0)
     if (calls.length === 0) continue
     const firstCall = Math.min(...calls)
-    const validated = chunk.search(/\bisValid(?:Slug|EntityId)\s*\(/)
+    const validated = chunk.search(/\bisValid(?:Slug|EntityId|PublicId)\s*\(/)
     if (validated < 0 || validated > firstCall) {
       const fn = /function\s+(\w+)/.exec(chunk)?.[1] ?? '(anonymous)'
       problems.push(
-        `${m.rel}: M13 ${fn}() calls lib/data/public before validating the route param (isValidSlug / isValidEntityId)`,
+        `${m.rel}: M13 ${fn}() calls lib/data/public before validating the route param (isValidSlug / isValidEntityId / isValidPublicId)`,
       )
     }
   }

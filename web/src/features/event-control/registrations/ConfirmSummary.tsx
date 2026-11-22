@@ -1,5 +1,4 @@
-import { rupeesToPaise } from '@/features/admin/payments/payments-labels'
-import { formatInr } from '@/lib/format/money'
+import { formatInr, rupeesToPaise } from '@/lib/format/money'
 
 interface ConfirmSummaryProps {
   playerName: string

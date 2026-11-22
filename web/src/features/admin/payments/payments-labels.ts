@@ -44,13 +44,3 @@ export const MISMATCH_LABEL: Record<MismatchKind, string> = {
   missing_at_provider: 'Missing at provider',
   missing_at_pg: 'Missing at PG',
 }
-
-const RUPEES = /^(\d{1,7})(?:\.(\d{1,2}))?$/
-
-/** Exact rupees text to integer paise ("250", "250.5"). Returns null for anything else; never rounds. */
-export function rupeesToPaise(text: string): number | null {
-  const match = RUPEES.exec(text.trim())
-  if (match === null) return null
-  const fraction = (match[2] ?? '').padEnd(2, '0')
-  return Number(match[1]) * 100 + Number(fraction)
-}

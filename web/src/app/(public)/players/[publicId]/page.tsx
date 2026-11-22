@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { PublicProfile } from '@/features/player/public-profile/PublicProfile'
+import { PublicProfile } from '@/components/domain/PublicProfile'
 import { getPlayerProfile } from '@/lib/data/public/player-profile'
 import { isValidPublicId } from '@/lib/routes/params'
 import { playerProfileHref } from '@/lib/routes/routes'
