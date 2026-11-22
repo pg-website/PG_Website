@@ -60,8 +60,7 @@ function computeStandings(data: AdminRoundsDto): StandingRow[] {
 
   const points = scoresOf(finals, played.keys())
   const breaks = computeTieBreaks(finals, points)
-  const tbOf = (id: string): TieBreaks =>
-    breaks.get(id) ?? { buchholz: 0, buchholzCut1: 0, buchholzCut2: 0, sonnebornBerger: 0 }
+  const tbOf = (id: string): TieBreaks => breaks.get(id) ?? { buchholz: 0, buchholzCut1: 0, buchholzCut2: 0, sonnebornBerger: 0 }
 
   const sorted = [...played.keys()].sort(
     (a, b) =>

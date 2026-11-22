@@ -513,7 +513,7 @@ class SeasonTests(TestCase):
         for pool in POOLS:
             for index in range(1, TOURNAMENTS):
                 seeded, first_round = self.season[pool]['first_rounds'][index]
-            order = sorted(self.players, key=lambda user: (-seeded[user.pk], str(user.pk)))
+                order = sorted(self.players, key=lambda user: (-seeded[user.pk], str(user.pk)))
                 with self.subTest(pool=pool, tournament=index + 1):
                     self.assertEqual(first_round[0], (order[BOARDS].pk, order[0].pk))
                     self.assertNotEqual(set(first_round[0]), {order[0].pk, order[1].pk})
