@@ -38,8 +38,14 @@ export function StepList({ steps, current, reachable, blockerCounts, onSelect }:
                 </span>
                 <span>
                   {step.label}
-                  {blockers ? <span className="ml-1 text-xs font-normal text-warning-ink">({blockers})</span> : null}
-                  {!isReachable ? <span className="sr-only"> (finish the earlier steps first)</span> : null}
+                  {blockers ? (
+                    <span className="ml-1 text-xs font-normal text-warning-ink">
+                      ({blockers})
+                    </span>
+                  ) : null}
+                  {!isReachable ? (
+                    <span className="sr-only"> (finish the earlier steps first)</span>
+                  ) : null}
                 </span>
               </button>
             </li>

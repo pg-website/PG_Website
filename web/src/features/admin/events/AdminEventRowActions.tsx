@@ -39,7 +39,10 @@ export function AdminEventRowActions({ row }: { row: AdminEventRowDto }) {
             // that won't match the stored keys which always carry the full filter string).
             queryClient.setQueriesData<{ items: AdminEventRowDto[]; pagination: unknown }>(
               { queryKey: ['admin', 'events'] },
-              (old) => (old === undefined ? old : { ...old, items: old.items.filter((r) => r.id !== row.id) }),
+              (old) =>
+                old === undefined
+                  ? old
+                  : { ...old, items: old.items.filter((r) => r.id !== row.id) },
             )
             await api.events.deleteEvent(row.id)
           }}

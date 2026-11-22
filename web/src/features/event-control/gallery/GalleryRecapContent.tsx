@@ -11,7 +11,7 @@ import { useToast } from '@/components/ui/feedback/useToast'
 import { Field } from '@/components/ui/form/Field'
 import { Switch } from '@/components/ui/form/Switch'
 import { Textarea } from '@/components/ui/form/Textarea'
-import { AssetListField } from '@/components/admin/AssetListField'
+import { AssetListField } from '@/features/media/AssetListField'
 import { useApi } from '@/lib/api/adapters/useApi.browser'
 import { copyFor, fieldErrorsFrom } from '@/lib/api/error-copy'
 import type { EventRecapDto, UpdateRecapInput } from '@/lib/api/types/admin/control-recap'
@@ -66,7 +66,10 @@ export function GalleryRecapContent({ eventId, recap }: ContentProps) {
   }
 
   const handleTogglePublish = (checked: boolean) => {
-    update({ version: recap.version, publishArchive: checked }, checked ? 'Archive published.' : 'Archive unpublished.')
+    update(
+      { version: recap.version, publishArchive: checked },
+      checked ? 'Archive published.' : 'Archive unpublished.',
+    )
   }
 
   return (
@@ -111,7 +114,9 @@ export function GalleryRecapContent({ eventId, recap }: ContentProps) {
           </div>
 
           {!editable && (
-            <Banner tone="warning">The gallery and recap can be edited only after the event is completed.</Banner>
+            <Banner tone="warning">
+              The gallery and recap can be edited only after the event is completed.
+            </Banner>
           )}
 
           <Field label="Recap text">
@@ -137,7 +142,9 @@ export function GalleryRecapContent({ eventId, recap }: ContentProps) {
             disabled={!recap.canPublishArchive.allowed || mutation.isPending}
           />
 
-          {recap.lastChange !== null && <p className="text-sm text-muted">Last saved by {recap.lastChange.by.name}</p>}
+          {recap.lastChange !== null && (
+            <p className="text-sm text-muted">Last saved by {recap.lastChange.by.name}</p>
+          )}
         </div>
       </Surface>
     </div>

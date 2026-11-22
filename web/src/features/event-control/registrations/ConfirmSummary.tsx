@@ -1,4 +1,5 @@
-import { formatInr, rupeesToPaise } from '@/lib/format/money'
+import { rupeesToPaise } from '@/features/admin/payments/payments-labels'
+import { formatInr } from '@/lib/format/money'
 
 interface ConfirmSummaryProps {
   playerName: string
@@ -48,7 +49,7 @@ export function ConfirmSummary({ playerName, eventTitle, eventPricePaise, amount
       ) : null}
       <div className="flex justify-between gap-4">
         <dt className="font-semibold text-ink-soft">Amount collected</dt>
-        <dd className={feeMatches ? 'text-ink' : 'font-semibold text-warning-ink'}>
+        <dd className={feeMatches ? 'text-ink' : 'text-warning-ink font-semibold'}>
           {enteredPaise !== null ? formatInr(enteredPaise, { zero: 'amount' }) : amountRupees}
         </dd>
       </div>
