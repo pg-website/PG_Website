@@ -827,7 +827,25 @@ def _audit_query(request, event: Event):
     return qs.select_related('actor').order_by('-occurred_at', '-id')
 
 
-def _summary(row: AuditLog) -> str | None:
+def _round_numbers(rows) -> dict:
+    """str(round pk) -> round number, for every round id an audit payload refers to in its `round` key."""
+    ids = set()
+    for r in rows:
+        value = r.after.get('round') if isinstance(r.after, dict) else None
+        if isinstance(value, str):
+            ids.add(value)
+    if not ids:
+        return {}
+    valid = []
+    for value in ids:
+        try:
+            valid.append(uuid.UUID(value))
+        except ValueError:
+            continue
+    return {str(pk): number for pk, number in Round.objects.filter(pk__in=valid).values_list('pk', 'number')}
+
+
+def _summary(row: AuditLog, round_numbers: dict | None = None) -> str | None:
     if row.reason:
         return re.sub(r'\s+', ' ', row.reason).strip()[:500] or None
     after, before = row.after, row.before
@@ -835,7 +853,10 @@ def _summary(row: AuditLog) -> str | None:
         return None
     parts = []
     for key, value in after.items():
-        if key == 'eventId' or value is None or not isinstance(value, (str, int, float, bool)):
+        if key in ('eventId', 'event') or value is None or not isinstance(value, (str, int, float, bool)):
+            continue
+        if key == 'round' and round_numbers is not None and str(value) in round_numbers:
+            parts.append(f'round: {round_numbers[str(value)]}')
             continue
         old = before.get(key) if isinstance(before, dict) else None
         parts.append(f'{key}: {old} to {value}' if old is not None else f'{key}: {value}')
@@ -863,6 +884,7 @@ def _object_texts(rows) -> dict:
 
 def _entry_dtos(rows) -> list[dict]:
     texts = _object_texts(rows)
+    round_numbers = _round_numbers(rows)
     out = []
     for r in rows:
         actor = r.actor
@@ -871,7 +893,7 @@ def _entry_dtos(rows) -> list[dict]:
                               'name': _name(actor) if actor else 'Former admin'},
                     'action': AUDIT_WEB[r.action],
                     'object': texts.get((r.object_type, r.object_id), f'{r.object_type.capitalize()}')[:200],
-                    'summary': _summary(r)})
+                    'summary': _summary(r, round_numbers)})
     return out
 
 

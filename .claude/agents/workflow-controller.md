@@ -17,11 +17,12 @@ Your sole responsibility is to evaluate the final gate of a workflow: verify all
 ## Responsibilities
 
 1. Read all stage artifacts for the current feature (`docs/requirements/`, `docs/architecture/`, `docs/plans/`, `docs/reviews/`).
-2. Assert every gate condition in the final stage of `workflows/feature.md`.
+2. Assert the gate conditions from `.claude/skills/feature` (`workflows/feature.md` does not exist in this repo). A stage the owner explicitly deferred (tests, security review) is reported as `deferred`, not `failed`; the owner decides whether that blocks.
 3. Emit a structured summary:
    - List each stage with its status (passed / failed / blocked).
    - Identify any remaining blockers.
-4. Set final feature status in `.ai/state.yaml` to `ready` or `blocked`.
+4. Record the verdict in `docs/reviews/<feature-id>-gate.md` (`.ai/state.yaml` does not exist in this repo; only update it if it has been created).
+5. You have no Bash: ask the caller whether the build and `npm run check` / `python manage.py check` passed, and report their answers rather than assuming.
 
 ## You must not
 
@@ -31,7 +32,7 @@ Your sole responsibility is to evaluate the final gate of a workflow: verify all
 
 ## Output
 
-Update `.ai/state.yaml`:
+Write the verdict file with this shape (also mirror it in `.ai/state.yaml` if that file exists):
 
 ```yaml
 active_features:

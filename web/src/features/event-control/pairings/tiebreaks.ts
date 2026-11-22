@@ -1,5 +1,5 @@
 // Standings tie-breaks, mirror of backend registrations/tiebreaks.py. Pure, final results only.
-// Order: points, Buchholz, Sonneborn-Berger, wins, then the caller's name order.
+// Order: points, Buchholz, Buchholz cut 1, Buchholz cut 2, Sonneborn-Berger, then the caller's name order.
 
 export interface FinalGame {
   white: string
@@ -10,8 +10,9 @@ export interface FinalGame {
 
 export interface TieBreaks {
   buchholz: number
+  buchholzCut1: number
+  buchholzCut2: number
   sonnebornBerger: number
-  wins: number
 }
 
 export function scoresOf(games: readonly FinalGame[], players: Iterable<string>): Map<string, number> {
@@ -33,17 +34,21 @@ export function computeTieBreaks(
   games: readonly FinalGame[],
   points: ReadonlyMap<string, number>,
 ): Map<string, TieBreaks> {
-  const out = new Map<string, TieBreaks>()
-  for (const p of points.keys()) out.set(p, { buchholz: 0, sonnebornBerger: 0, wins: 0 })
-  const of = (id: string): TieBreaks => out.get(id) as TieBreaks
+  const opponentScores = new Map<string, number[]>()
+  const sonnebornBerger = new Map<string, number>()
+  
+  for (const p of points.keys()) {
+    opponentScores.set(p, [])
+    sonnebornBerger.set(p, 0)
+  }
+  
   const pts = (id: string): number => points.get(id) ?? 0
 
   for (const g of games) {
     if (g.black === null) {
-      const t = of(g.white)
-      t.wins += 1
-      t.buchholz += pts(g.white)
-      t.sonnebornBerger += pts(g.white)
+      // Bye: virtual opponent on player's own score
+      opponentScores.get(g.white)!.push(pts(g.white))
+      sonnebornBerger.set(g.white, (sonnebornBerger.get(g.white) ?? 0) + pts(g.white))
       continue
     }
     const sides = [
@@ -51,16 +56,29 @@ export function computeTieBreaks(
       { me: g.black, opp: g.white, mine: 'black' },
     ] as const
     for (const { me, opp, mine } of sides) {
-      const t = of(me)
-      t.buchholz += pts(opp)
+      opponentScores.get(me)!.push(pts(opp))
       if (g.outcome === mine) {
-        t.wins += 1
-        t.sonnebornBerger += pts(opp)
+        sonnebornBerger.set(me, (sonnebornBerger.get(me) ?? 0) + pts(opp))
       } else if (g.outcome === 'draw') {
-        t.sonnebornBerger += pts(opp) / 2
+        sonnebornBerger.set(me, (sonnebornBerger.get(me) ?? 0) + pts(opp) / 2)
       }
     }
   }
+  
+  const out = new Map<string, TieBreaks>()
+  for (const p of points.keys()) {
+    const oppScores = opponentScores.get(p)!.sort((a, b) => a - b)
+    const buchholz = oppScores.reduce((sum, s) => sum + s, 0)
+    const buchholzCut1 = oppScores.length > 0 ? oppScores.slice(1).reduce((sum, s) => sum + s, 0) : 0
+    const buchholzCut2 = oppScores.length > 1 ? oppScores.slice(2).reduce((sum, s) => sum + s, 0) : 0
+    out.set(p, {
+      buchholz,
+      buchholzCut1,
+      buchholzCut2,
+      sonnebornBerger: sonnebornBerger.get(p) ?? 0,
+    })
+  }
+  
   return out
 }
 
@@ -72,7 +90,8 @@ export function compareStanding(
   return (
     b.score - a.score ||
     b.tb.buchholz - a.tb.buchholz ||
-    b.tb.sonnebornBerger - a.tb.sonnebornBerger ||
-    b.tb.wins - a.tb.wins
+    b.tb.buchholzCut1 - a.tb.buchholzCut1 ||
+    b.tb.buchholzCut2 - a.tb.buchholzCut2 ||
+    b.tb.sonnebornBerger - a.tb.sonnebornBerger
   )
 }

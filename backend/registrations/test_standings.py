@@ -110,22 +110,26 @@ class OrderTests(StandingsTestCase):
         self.game(self.round1, 2, 'Carol', 'Bob', 'white')
         self.game(self.round2, 1, 'Bob', 'Erin', 'white')
 
+        # Bob now ranks higher than Carol because with the new tiebreaker order (Buchholz → cut1 → cut2 → SB),
+        # Bob's cut1 (1.0) is better than Carol's (0.0). Bob played Carol (1.0) and Erin (0.0), removing the
+        # lowest gives 1.0. Carol only played Bob (1.0), removing lowest gives 0.0.
         self.assertEqual(self.table(self.round1, self.round2), [
-            ('Carol', 1, 1.0, 1, 1.0),
-            ('Bob', 2, 1.0, 2, 1.0),
+            ('Bob', 1, 1.0, 2, 1.0),
+            ('Carol', 2, 1.0, 1, 1.0),
             ('Alice', 3, 1.0, 1, 0.0),
             ('Dave', 4, 0.0, 1, 1.0),
             ('Erin', 4, 0.0, 1, 1.0),
         ])
 
     def test_sonneborn_berger_decides_when_points_and_buchholz_are_level(self):
-        # Carol and Bob both finish on 1 point with Buchholz 1. Carol beat Bob (who scored 1), so her
-        # Sonneborn-Berger is 1 against Bob's 0.
+        # Carol and Bob both finish on 1 point with Buchholz 1. With the new tiebreaker order, Bob's cut1 (1.0)
+        # beats Carol's (0.0), so Bob ranks first. Carol beat Bob (who scored 1), so her Sonneborn-Berger is 1
+        # against Bob's 0, but SB comes after the cuts now.
         self.game(self.round1, 1, 'Carol', 'Bob', 'white')
         self.game(self.round1, 2, 'Bob', 'Erin', 'white')
         self.assertEqual(self.table(self.round1), [
-            ('Carol', 1, 1.0, 1, 1.0),
-            ('Bob', 2, 1.0, 2, 1.0),
+            ('Bob', 1, 1.0, 2, 1.0),
+            ('Carol', 2, 1.0, 1, 1.0),
             ('Erin', 3, 0.0, 1, 1.0),
         ])
 
