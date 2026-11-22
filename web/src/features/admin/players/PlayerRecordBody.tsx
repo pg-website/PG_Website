@@ -62,7 +62,13 @@ function privateValue(player: AdminPlayerDto, field: PermittedPrivateField): str
   return field === 'birthday' ? formatBirthday(value) : value
 }
 
-export function PlayerRecordBody({ player, onRoleChanged }: { player: AdminPlayerDto; onRoleChanged: (role: UserRole) => void }) {
+export function PlayerRecordBody({
+  player,
+  onRoleChanged,
+}: {
+  player: AdminPlayerDto
+  onRoleChanged: (role: UserRole) => void
+}) {
   const headingRef = useRef<HTMLDivElement>(null)
   const id = player.id
 
@@ -191,4 +197,3 @@ export function PlayerRecordBody({ player, onRoleChanged }: { player: AdminPlaye
     </div>
   )
 }
-

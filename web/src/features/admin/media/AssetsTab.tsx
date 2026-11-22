@@ -76,11 +76,7 @@ export function AssetsTab({ fileInputRef }: AssetsTabProps) {
   const uploadBanner = (() => {
     if (uploadFlow.status === 'uploading' || uploadFlow.status === 'completing') {
       const pct = uploadFlow.progress ?? 0
-      return (
-        <Banner tone="info">
-          Uploading… {pct}%
-        </Banner>
-      )
+      return <Banner tone="info">Uploading… {pct}%</Banner>
     }
     if (uploadFlow.status === 'error' && uploadFlow.error) {
       return <Banner tone="danger">{uploadFlow.error}</Banner>
@@ -111,11 +107,7 @@ export function AssetsTab({ fileInputRef }: AssetsTabProps) {
             ))}
           </div>
         )}
-        <TablePagination
-          pagination={pagination}
-          onPageChange={setPage}
-          label="Asset pages"
-        />
+        <TablePagination pagination={pagination} onPageChange={setPage} label="Asset pages" />
       </>
     )
   } else if (query.isPending) {
@@ -162,7 +154,7 @@ export function AssetsTab({ fileInputRef }: AssetsTabProps) {
           value={rawSearch}
           onChange={(e) => setRawSearch(e.target.value)}
           placeholder="Search by filename or alt text"
-          className="min-h-control w-full max-w-sm rounded-public border border-line-admin bg-parchment-soft px-3 py-2 font-body text-body text-ink placeholder:text-muted focus:outline-2 focus:outline-offset-2 focus:outline-forest"
+          className="font-body min-h-control w-full max-w-sm rounded-public border border-line-admin bg-parchment-soft px-3 py-2 text-body text-ink placeholder:text-muted focus:outline-2 focus:outline-offset-2 focus:outline-forest"
         />
       </div>
 

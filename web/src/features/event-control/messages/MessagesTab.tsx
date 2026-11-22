@@ -87,9 +87,7 @@ const COLUMNS: TableColumn<MessageLogEntry>[] = [
     id: 'status',
     header: 'State',
     cell: (row) => (
-      <StatusBadge tone={DELIVERY_STATUS_TONE[row.status]}>
-        {DELIVERY_STATUS_LABEL[row.status]}
-      </StatusBadge>
+      <StatusBadge tone={DELIVERY_STATUS_TONE[row.status]}>{DELIVERY_STATUS_LABEL[row.status]}</StatusBadge>
     ),
     priority: 'primary',
   },
@@ -120,13 +118,12 @@ export function MessagesTab({ eventId }: ControlTabProps) {
 
   // Load expanded message detail if one is selected
   const expandedMessageQuery = useQuery(
-    expandedMessageId ? adminMessageQuery(api.admin, eventId, expandedMessageId) : { queryKey: [] as never, enabled: false },
+    expandedMessageId
+      ? adminMessageQuery(api.admin, eventId, expandedMessageId)
+      : { queryKey: [] as never, enabled: false },
   )
 
-  const sendMutation = useApiMutation<
-    Awaited<ReturnType<typeof api.admin.control.sendMessage>>,
-    SendMessageInput
-  >({
+  const sendMutation = useApiMutation<Awaited<ReturnType<typeof api.admin.control.sendMessage>>, SendMessageInput>({
     mutationFn: async (input) => {
       const idempotencyKey = newIdempotencyKey()
       return api.admin.control.sendMessage(eventId, input, idempotencyKey)
@@ -166,11 +163,7 @@ export function MessagesTab({ eventId }: ControlTabProps) {
     <div className="grid min-w-0 gap-4">
       {/* Send message button */}
       <div className="flex justify-end">
-        <Button
-          variant="primary"
-          onClick={() => setSendDialogOpen(true)}
-          disabled={data === undefined}
-        >
+        <Button variant="primary" onClick={() => setSendDialogOpen(true)} disabled={data === undefined}>
           Send message
         </Button>
       </div>
@@ -205,7 +198,7 @@ export function MessagesTab({ eventId }: ControlTabProps) {
 
           {/* Expanded message detail */}
           {expandedMessageId && expandedMessageQuery.data && (
-            <div className="rounded-public border border-line bg-surface-soft p-4">
+            <div className="bg-surface-soft rounded-public border border-line p-4">
               <h3 className="mb-4 font-semibold">Recipient delivery state</h3>
               {expandedMessageQuery.data.recipients.length === 0 ? (
                 <p className="text-sm text-ink-soft">No recipients.</p>
@@ -251,18 +244,10 @@ export function MessagesTab({ eventId }: ControlTabProps) {
         size="lg"
         footer={
           <div className="flex gap-2">
-            <Button
-              variant="secondary"
-              onClick={() => setSendDialogOpen(false)}
-              disabled={sendMutation.isPending}
-            >
+            <Button variant="secondary" onClick={() => setSendDialogOpen(false)} disabled={sendMutation.isPending}>
               Cancel
             </Button>
-            <Button
-              variant="primary"
-              onClick={handleSendMessage}
-              loading={sendMutation.isPending}
-            >
+            <Button variant="primary" onClick={handleSendMessage} loading={sendMutation.isPending}>
               Send
             </Button>
           </div>
@@ -270,10 +255,7 @@ export function MessagesTab({ eventId }: ControlTabProps) {
       >
         <form className="grid gap-4" onSubmit={(e) => e.preventDefault()}>
           <Field label="Audience">
-            <select
-              {...form.register('audience')}
-              className="rounded-public border border-line bg-surface px-3 py-2"
-            >
+            <select {...form.register('audience')} className="bg-surface rounded-public border border-line px-3 py-2">
               {MESSAGE_AUDIENCES.map((aud) => (
                 <option key={aud} value={aud}>
                   {AUDIENCE_LABEL[aud]}
@@ -283,26 +265,17 @@ export function MessagesTab({ eventId }: ControlTabProps) {
           </Field>
 
           <Field label="Channel">
-            <select {...form.register('channel')} className="rounded-public border border-line bg-surface px-3 py-2">
+            <select {...form.register('channel')} className="bg-surface rounded-public border border-line px-3 py-2">
               <option value="email">Email</option>
             </select>
           </Field>
 
           <Field label="Subject">
-            <Input
-              {...form.register('subject')}
-              maxLength={150}
-              placeholder="Email subject"
-            />
+            <Input {...form.register('subject')} maxLength={150} placeholder="Email subject" />
           </Field>
 
           <Field label="Message body">
-            <Textarea
-              {...form.register('body')}
-              maxLength={5000}
-              placeholder="Message text"
-              rows={6}
-            />
+            <Textarea {...form.register('body')} maxLength={5000} placeholder="Message text" rows={6} />
           </Field>
         </form>
       </Dialog>

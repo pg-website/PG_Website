@@ -11,7 +11,9 @@ import type { SeoImage } from '@/lib/seo/metadata'
 export function SeoPreview() {
   const server = useBuilderSelector((state) => state.server)
   const pending = useBuilderSelector((state) => state.pending)
-  const firstId = useBuilderSelector((state) => ((state.pending.media?.assetIds as string[] | undefined) ?? state.server.media.assetIds)[0])
+  const firstId = useBuilderSelector(
+    (state) => ((state.pending.media?.assetIds as string[] | undefined) ?? state.server.media.assetIds)[0],
+  )
   const serverAssets = useBuilderSelector((state) => state.server.media.assets)
   const deferredServer = useDeferredValue(server)
   const deferredPending = useDeferredValue(pending)

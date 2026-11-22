@@ -31,7 +31,6 @@ export const authoringSlugSchema = z.string().min(3).max(80).regex(SLUG_PATTERN)
 /** Internal entity id. `guid` accepts any 8-4-4-4-12 hex id, so deterministic mock ids are fine. Never used in public URLs. */
 export const uuidSchema = z.guid()
 
-
 /** `Idempotency-Key` header value (contract 2.5, ARCH-001 11.8): a UUID v4 created when the user's intent starts. */
 export const idempotencyKeySchema = z.uuidv4().brand<'IdempotencyKey'>()
 export type IdempotencyKey = z.infer<typeof idempotencyKeySchema>

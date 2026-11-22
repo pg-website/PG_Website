@@ -22,7 +22,9 @@ export function AuthFields({ form }: { form: UseFormReturn<Values, unknown, Valu
           needsConfirm: () => true,
           title: 'Change Google sign-in?',
           consequence: (next) =>
-            next ? 'Players will be able to sign in with Google.' : 'Players will no longer be able to sign in with Google.',
+            next
+              ? 'Players will be able to sign in with Google.'
+              : 'Players will no longer be able to sign in with Google.',
         }}
       />
       <SwitchField

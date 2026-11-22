@@ -147,9 +147,7 @@ export function CashRegisterDialog({ eventId, overview, onSuccess }: CashRegiste
         }
         setOpen(false)
         onSuccess()
-        toast.success(
-          free ? `${selectedPlayer.name} enrolled` : `${selectedPlayer.name} registered with cash payment`,
-        )
+        toast.success(free ? `${selectedPlayer.name} enrolled` : `${selectedPlayer.name} registered with cash payment`)
       } catch (err) {
         setError(err)
       }
@@ -170,12 +168,7 @@ export function CashRegisterDialog({ eventId, overview, onSuccess }: CashRegiste
         >
           Cancel
         </button>
-        <Button
-          variant="primary"
-          size="lg"
-          disabled={!confirmEnabled}
-          onClick={handleNext}
-        >
+        <Button variant="primary" size="lg" disabled={!confirmEnabled} onClick={handleNext}>
           Review
         </Button>
       </>

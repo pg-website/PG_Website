@@ -167,7 +167,10 @@ export type AdminMediaList = z.infer<typeof adminMediaListSchema>
 
 /** Write shape: `{ assetIds, autoplay?, intervalMs? }`. No duplicates. */
 export const mediaListInputSchema = z.strictObject({
-  assetIds: z.array(uuidSchema).max(MAX_ASSET_LIST_ITEMS).refine((v) => new Set(v).size === v.length, 'No duplicates'),
+  assetIds: z
+    .array(uuidSchema)
+    .max(MAX_ASSET_LIST_ITEMS)
+    .refine((v) => new Set(v).size === v.length, 'No duplicates'),
   autoplay: z.boolean().optional(),
   intervalMs: intervalMs.optional(),
 })

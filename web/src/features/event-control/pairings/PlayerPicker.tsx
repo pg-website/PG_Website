@@ -5,11 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { Field } from '@/components/ui/form/Field'
 import { Input } from '@/components/ui/form/Input'
 import { Dialog } from '@/components/ui/overlay/Dialog'
-import {
-  filterOptions,
-  MAX_PICKER_ROWS,
-  type PickerOption,
-} from '@/features/event-control/pairings/pairings-logic'
+import { filterOptions, MAX_PICKER_ROWS, type PickerOption } from '@/features/event-control/pairings/pairings-logic'
 
 interface Props {
   /** Names the seat in the dialog title and the accessible label ("Board 2 White", "Bye"). */
@@ -71,7 +67,9 @@ export function PlayerPicker({ seatLabel, triggerText, options, onChoose, disabl
           {matches.length === 0
             ? 'No players match.'
             : `${String(matches.length)} player${matches.length === 1 ? '' : 's'}${
-                matches.length > shown.length ? `, showing the first ${String(shown.length)}. Type to narrow the list.` : ''
+                matches.length > shown.length
+                  ? `, showing the first ${String(shown.length)}. Type to narrow the list.`
+                  : ''
               }`}
         </p>
         <ul className="grid max-h-1/2 list-none gap-2 overflow-y-auto overscroll-contain p-0">

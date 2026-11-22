@@ -39,7 +39,9 @@ export interface PlayerInfo {
 }
 
 /** Every player the editor can name: seated players first, then the round's unseated candidates. */
-export function playerDirectory(round: Pick<AdminRoundDto, 'pairings' | 'candidates'>): ReadonlyMap<string, PlayerInfo> {
+export function playerDirectory(
+  round: Pick<AdminRoundDto, 'pairings' | 'candidates'>,
+): ReadonlyMap<string, PlayerInfo> {
   const map = new Map<string, PlayerInfo>()
   for (const candidate of round.candidates) {
     map.set(candidate.registrationId, { ...candidate })
@@ -116,7 +118,10 @@ export function placeInSeat(model: DraftModel, boardNo: number, side: Side, regi
 
   let byes = [...model.byes]
   if (from?.kind === 'bye') {
-    byes = occupant === null ? byes.filter((id) => id !== registrationId) : byes.map((id) => (id === registrationId ? occupant : id))
+    byes =
+      occupant === null
+        ? byes.filter((id) => id !== registrationId)
+        : byes.map((id) => (id === registrationId ? occupant : id))
   }
   const boards = model.boards.map((board) => {
     const next: DraftBoard = { ...board }
@@ -203,9 +208,7 @@ export function editPhase(round: Pick<AdminRoundDto, 'state'>): 'draft' | 'after
 }
 
 export type EditRequest =
-  | { ok: true; input: EditPairingsInput }
-  | { ok: false; reasonMissing: true }
-  | { ok: false; incomplete: true }
+  { ok: true; input: EditPairingsInput } | { ok: false; reasonMissing: true } | { ok: false; incomplete: true }
 
 /**
  * Builds the C08 body. After publish a blank reason is refused here (the server also requires it). A board with an

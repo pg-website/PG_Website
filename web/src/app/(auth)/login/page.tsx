@@ -62,7 +62,6 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
 
   return (
     <AuthLayout story={LOGIN_STORY}>
-
       <div className="grid min-w-0 gap-8">
         <div className="grid min-w-0 gap-3">
           <Eyebrow>Welcome back</Eyebrow>

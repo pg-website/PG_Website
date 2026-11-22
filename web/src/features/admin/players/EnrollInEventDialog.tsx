@@ -171,13 +171,11 @@ export function EnrollInEventDialog({ player }: EnrollInEventDialogProps) {
 
           {hasSelectedEvent ? (
             <div className="grid gap-2 rounded-public border border-line p-4">
-              <p className="font-semibold">
-                {selected.title.trim() !== '' ? selected.title : 'Untitled event'}
-              </p>
+              <p className="font-semibold">{selected.title.trim() !== '' ? selected.title : 'Untitled event'}</p>
               <p className="text-sm text-ink-soft">{eventSummary(selected)}</p>
               <p className="mt-2 text-sm">
-                This creates a confirmed spot for{' '}
-                <strong className="font-semibold">{player.name}</strong> (admin enrolled, no payment required).
+                This creates a confirmed spot for <strong className="font-semibold">{player.name}</strong> (admin
+                enrolled, no payment required).
               </p>
             </div>
           ) : (
@@ -213,9 +211,7 @@ export function EnrollInEventDialog({ player }: EnrollInEventDialogProps) {
                           handleSelectEvent(event)
                         }}
                       >
-                        <p className="font-semibold">
-                          {event.title.trim() !== '' ? event.title : 'Untitled event'}
-                        </p>
+                        <p className="font-semibold">{event.title.trim() !== '' ? event.title : 'Untitled event'}</p>
                         <p className="mt-0.5 text-sm text-ink-soft">{eventSummary(event)}</p>
                       </button>
                     </li>

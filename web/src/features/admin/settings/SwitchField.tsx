@@ -34,7 +34,12 @@ export function SwitchField<T extends FieldValues>({
           <Switch
             ref={field.ref}
             name={field.name}
-            label={<>{label}{notApplied ? <NotAppliedBadge /> : null}</>}
+            label={
+              <>
+                {label}
+                {notApplied ? <NotAppliedBadge /> : null}
+              </>
+            }
             description={description}
             error={fieldState.error?.message}
             checked={Boolean(field.value)}

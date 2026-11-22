@@ -152,13 +152,7 @@ export function BasicsStep() {
       </div>
 
       {/* Row 5: Promise (full width textarea) */}
-      <FormField
-        control={control}
-        name="promise"
-        label="One-line promise"
-        optionalLabel
-        hint="Shown on event cards."
-      >
+      <FormField control={control} name="promise" label="One-line promise" optionalLabel hint="Shown on event cards.">
         {(field, id) => (
           <Textarea
             id={id}

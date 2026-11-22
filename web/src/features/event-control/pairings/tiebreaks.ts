@@ -36,12 +36,12 @@ export function computeTieBreaks(
 ): Map<string, TieBreaks> {
   const opponentScores = new Map<string, number[]>()
   const sonnebornBerger = new Map<string, number>()
-  
+
   for (const p of points.keys()) {
     opponentScores.set(p, [])
     sonnebornBerger.set(p, 0)
   }
-  
+
   const pts = (id: string): number => points.get(id) ?? 0
 
   for (const g of games) {
@@ -64,7 +64,7 @@ export function computeTieBreaks(
       }
     }
   }
-  
+
   const out = new Map<string, TieBreaks>()
   for (const p of points.keys()) {
     const oppScores = opponentScores.get(p)!.sort((a, b) => a - b)
@@ -78,15 +78,12 @@ export function computeTieBreaks(
       sonnebornBerger: sonnebornBerger.get(p) ?? 0,
     })
   }
-  
+
   return out
 }
 
 /** Negative when `a` ranks above `b` on points and tie-breaks (names are the caller's last resort). */
-export function compareStanding(
-  a: { score: number; tb: TieBreaks },
-  b: { score: number; tb: TieBreaks },
-): number {
+export function compareStanding(a: { score: number; tb: TieBreaks }, b: { score: number; tb: TieBreaks }): number {
   return (
     b.score - a.score ||
     b.tb.buchholz - a.tb.buchholz ||

@@ -1,7 +1,11 @@
 import { z } from 'zod'
 import { publicationResultSchema } from '@/lib/api/types/admin/common'
 import { auditEntrySchema } from '@/lib/api/types/admin/control-audit'
-import { checkInAllResultSchema, checkInDeskSchema, manualCheckInResultSchema } from '@/lib/api/types/admin/control-checkin'
+import {
+  checkInAllResultSchema,
+  checkInDeskSchema,
+  manualCheckInResultSchema,
+} from '@/lib/api/types/admin/control-checkin'
 import {
   communicationsSettingsSchema,
   messageAcceptedSchema,

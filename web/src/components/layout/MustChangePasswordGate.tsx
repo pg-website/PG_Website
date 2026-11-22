@@ -89,7 +89,7 @@ export function MustChangePasswordGate({ onLoggedOut }: MustChangePasswordGatePr
     form.currentPassword.trim() !== '' && form.newPassword.trim() !== '' && form.confirmPassword.trim() !== ''
 
   return (
-    <div className="flex min-h-dvh items-center justify-center px-gutter py-safe-12">
+    <div className="py-safe-12 flex min-h-dvh items-center justify-center px-gutter">
       <div className="w-full max-w-md min-w-0">
         <div className="grid gap-6">
           <div className="grid gap-2">

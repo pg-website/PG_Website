@@ -1,7 +1,14 @@
 import { z } from 'zod'
 import { mediaAssetSummarySchema } from '@/lib/api/types/admin/media'
 import { mediaCollectionSchema as publicMediaSchema } from '@/lib/api/types/media'
-import { isoInstantSchema, linkHrefSchema, plainText, safeHrefSchema, uuidSchema, versionSchema } from '@/lib/api/types/primitives'
+import {
+  isoInstantSchema,
+  linkHrefSchema,
+  plainText,
+  safeHrefSchema,
+  uuidSchema,
+  versionSchema,
+} from '@/lib/api/types/primitives'
 
 // Published site sections (contract P01; CONTENT-MODEL-MAP.md). Typed fields only, no HTML, no free-form layout.
 // A section is `{ key, version, updatedAt, content }`, a discriminated union on `key`, so a consumer that asks for

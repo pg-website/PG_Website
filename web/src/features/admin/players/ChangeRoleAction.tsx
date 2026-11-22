@@ -20,7 +20,13 @@ const ROLE_OPTIONS = USER_ROLES.map((role) => ({ value: role, label: ROLE_LABEL[
  * reason when `canChangeRole` is off (own account, last admin); the server re-checks either way.
  * Mount with `key={player.id + player.role}` so the choice resets after a change or a different player.
  */
-export function ChangeRoleAction({ player, onChanged }: { player: AdminPlayerDto; onChanged: (role: UserRole) => void }) {
+export function ChangeRoleAction({
+  player,
+  onChanged,
+}: {
+  player: AdminPlayerDto
+  onChanged: (role: UserRole) => void
+}) {
   const api = useApi()
   const [role, setRole] = useState<UserRole>(player.role)
   const capability = player.canChangeRole

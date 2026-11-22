@@ -9,7 +9,7 @@ export function StepList({ steps, current, reachable, blockerCounts, onSelect }:
   return (
     <nav
       aria-label="Event steps"
-      className="hidden lg:sticky lg:top-4 lg:block lg:self-start border border-line-admin bg-admin-panel"
+      className="hidden border border-line-admin bg-admin-panel lg:sticky lg:top-4 lg:block lg:self-start"
     >
       <ol>
         {steps.map((step, index) => {
@@ -38,14 +38,8 @@ export function StepList({ steps, current, reachable, blockerCounts, onSelect }:
                 </span>
                 <span>
                   {step.label}
-                  {blockers ? (
-                    <span className="ml-1 text-xs font-normal text-warning-ink">
-                      ({blockers})
-                    </span>
-                  ) : null}
-                  {!isReachable ? (
-                    <span className="sr-only"> (finish the earlier steps first)</span>
-                  ) : null}
+                  {blockers ? <span className="ml-1 text-xs font-normal text-warning-ink">({blockers})</span> : null}
+                  {!isReachable ? <span className="sr-only"> (finish the earlier steps first)</span> : null}
                 </span>
               </button>
             </li>

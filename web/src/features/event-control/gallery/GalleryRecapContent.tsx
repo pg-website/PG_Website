@@ -66,10 +66,7 @@ export function GalleryRecapContent({ eventId, recap }: ContentProps) {
   }
 
   const handleTogglePublish = (checked: boolean) => {
-    update(
-      { version: recap.version, publishArchive: checked },
-      checked ? 'Archive published.' : 'Archive unpublished.',
-    )
+    update({ version: recap.version, publishArchive: checked }, checked ? 'Archive published.' : 'Archive unpublished.')
   }
 
   return (
@@ -114,9 +111,7 @@ export function GalleryRecapContent({ eventId, recap }: ContentProps) {
           </div>
 
           {!editable && (
-            <Banner tone="warning">
-              The gallery and recap can be edited only after the event is completed.
-            </Banner>
+            <Banner tone="warning">The gallery and recap can be edited only after the event is completed.</Banner>
           )}
 
           <Field label="Recap text">
@@ -142,9 +137,7 @@ export function GalleryRecapContent({ eventId, recap }: ContentProps) {
             disabled={!recap.canPublishArchive.allowed || mutation.isPending}
           />
 
-          {recap.lastChange !== null && (
-            <p className="text-sm text-muted">Last saved by {recap.lastChange.by.name}</p>
-          )}
+          {recap.lastChange !== null && <p className="text-sm text-muted">Last saved by {recap.lastChange.by.name}</p>}
         </div>
       </Surface>
     </div>

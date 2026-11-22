@@ -47,9 +47,7 @@ export function AdminDashboard() {
         eyebrow="Operations"
         title="Dashboard"
         description="What needs your attention today, in the order it matters."
-        actions={
-          <CreateDraftButton size="lg">New event</CreateDraftButton>
-        }
+        actions={<CreateDraftButton size="lg">New event</CreateDraftButton>}
       />
       <QueryView
         query={query}
@@ -108,10 +106,7 @@ export function AdminDashboard() {
                   </h2>
                 </div>
                 {data.event === null ? (
-                  <EmptyState
-                    title="No upcoming event"
-                    action={<CreateDraftButton>Create an event</CreateDraftButton>}
-                  >
+                  <EmptyState title="No upcoming event" action={<CreateDraftButton>Create an event</CreateDraftButton>}>
                     Nothing is scheduled. Create an event to open registration.
                   </EmptyState>
                 ) : (

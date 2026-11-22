@@ -29,34 +29,34 @@ export function CommunicationsStep({ dataKey }: BuilderStepProps) {
 
   return (
     <section aria-labelledby="comms-triggers" className="grid min-w-0 gap-4">
-        <Heading level={2} size="card" id="comms-triggers">
-          Automatic emails
-        </Heading>
-        <p className="text-sm text-muted">
-          Choose which emails players get for this event. Messages are sent by email only. Each change saves on its own.
-        </p>
-        <ul className="m-0 grid min-w-0 list-none gap-2 p-0">
-          {MESSAGE_TRIGGERS.map((trigger) => (
-            <li key={trigger} className="min-w-0">
-              <Controller
-                control={control}
-                name={`triggers.${trigger}`}
-                render={({ field }) => (
-                  <Switch
-                    id={controlIdFor(field.name)}
-                    ref={field.ref}
-                    name={field.name}
-                    label={TRIGGER_COPY[trigger].label}
-                    description={TRIGGER_COPY[trigger].description}
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                    onBlur={field.onBlur}
-                  />
-                )}
-              />
-            </li>
-          ))}
-        </ul>
+      <Heading level={2} size="card" id="comms-triggers">
+        Automatic emails
+      </Heading>
+      <p className="text-sm text-muted">
+        Choose which emails players get for this event. Messages are sent by email only. Each change saves on its own.
+      </p>
+      <ul className="m-0 grid min-w-0 list-none gap-2 p-0">
+        {MESSAGE_TRIGGERS.map((trigger) => (
+          <li key={trigger} className="min-w-0">
+            <Controller
+              control={control}
+              name={`triggers.${trigger}`}
+              render={({ field }) => (
+                <Switch
+                  id={controlIdFor(field.name)}
+                  ref={field.ref}
+                  name={field.name}
+                  label={TRIGGER_COPY[trigger].label}
+                  description={TRIGGER_COPY[trigger].description}
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                  onBlur={field.onBlur}
+                />
+              )}
+            />
+          </li>
+        ))}
+      </ul>
     </section>
   )
 }

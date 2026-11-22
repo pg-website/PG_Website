@@ -191,7 +191,12 @@ export interface PgAdminEventsApi {
    * PLAN-012. Admin-direct enrollment: creates a confirmed registration with `payment_method='admin_enrolled'` and
    * `amount_paise=0`. Works for both free and paid events. Idempotency-Key required; no step-up required.
    */
-  enrollPlayer(eventId: EventId, input: AdminEnrollInput, key: IdempotencyKey, opts?: AdminRequestOpts): Promise<AdminRegistrationDto>
+  enrollPlayer(
+    eventId: EventId,
+    input: AdminEnrollInput,
+    key: IdempotencyKey,
+    opts?: AdminRequestOpts,
+  ): Promise<AdminRegistrationDto>
 }
 
 // ---------- Event control room (C01 to C17, screens 46 to 53) ----------

@@ -82,8 +82,7 @@ export function RoundsView({ eventId, data, eventStatus, mode, roundsPlanned }: 
 
   const selectedId = rounds.some((round) => round.id === picked) ? picked : defaultRoundId(rounds)
   // The row callback depends only on the round id, so it is stable while the round is the same.
-  const activeRoundId =
-    (rounds.find((candidate) => candidate.id === selectedId) ?? rounds[rounds.length - 1])?.id ?? ''
+  const activeRoundId = (rounds.find((candidate) => candidate.id === selectedId) ?? rounds[rounds.length - 1])?.id ?? ''
   const renderActions = useCallback(
     (row: AdminPairingDto): ReactNode => (
       <PairingRowActions eventId={eventId} roundId={activeRoundId} row={row} onDone={refresh} />
@@ -112,7 +111,10 @@ export function RoundsView({ eventId, data, eventStatus, mode, roundsPlanned }: 
   return (
     <div className="flex min-w-0 flex-col gap-5">
       {/* Under 720px: a horizontal strip of rounds that snaps to each chip. From 720px: the select. */}
-      <nav aria-label="Rounds" className="-mx-gutter flex snap-x snap-mandatory gap-2 overflow-x-auto px-gutter pb-1 sm:hidden">
+      <nav
+        aria-label="Rounds"
+        className="-mx-gutter flex snap-x snap-mandatory gap-2 overflow-x-auto px-gutter pb-1 sm:hidden"
+      >
         {rounds.map((item) => {
           const current = item.id === round.id
           return (

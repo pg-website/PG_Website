@@ -77,7 +77,8 @@ export function useUploadFlow() {
               setState((s) => ({ ...s, progress: Math.round((e.loaded / e.total) * 90) }))
             }
           }
-          xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Storage PUT failed: ${xhr.status}`)))
+          xhr.onload = () =>
+            xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Storage PUT failed: ${xhr.status}`))
           xhr.onerror = () => reject(new Error('Storage PUT network error'))
           xhr.send(file)
         })

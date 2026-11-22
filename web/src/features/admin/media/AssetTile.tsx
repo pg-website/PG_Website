@@ -16,22 +16,17 @@ export function AssetTile({ asset, selected, onClick }: AssetTileProps) {
       aria-pressed={selected}
       aria-label={asset.alt ?? asset.id}
       className={[
-        'group relative min-w-0 rounded-sm border-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2',
+        'group rounded-sm relative min-w-0 border-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2',
         selected ? 'border-copper' : 'border-transparent hover:border-line-admin',
       ].join(' ')}
     >
       <div className="aspect-square overflow-hidden bg-parchment-soft">
-        <img
-          src={asset.src}
-          alt={asset.alt ?? ''}
-          className="h-full w-full object-cover"
-          loading="lazy"
-        />
+        <img src={asset.src} alt={asset.alt ?? ''} className="h-full w-full object-cover" loading="lazy" />
       </div>
       {missingAlt && (
         <span
           aria-label="Missing alt text"
-          className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-warning text-xs font-bold text-white"
+          className="text-white absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-warning text-xs font-bold"
           title="Alt text missing"
         >
           !
