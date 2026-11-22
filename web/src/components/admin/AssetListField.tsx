@@ -7,9 +7,9 @@ import { Field } from '@/components/ui/form/Field'
 import { Input } from '@/components/ui/form/Input'
 import { Switch } from '@/components/ui/form/Switch'
 import { StatusBadge } from '@/components/ui/StatusBadge'
-import { useUploadFlow } from '@/features/admin/media/useUploadFlow'
+import { useUploadFlow } from '@/lib/media/useUploadFlow'
 import { MediaPickerDialog } from '@/features/cms/MediaPickerDialog'
-import { altLabel } from '@/features/cms/picker/altLabel'
+import { altLabel } from '@/lib/format/media'
 import {
   MAX_ASSET_LIST_ITEMS,
   MEDIA_INTERVAL_DEFAULT,

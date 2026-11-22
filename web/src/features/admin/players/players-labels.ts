@@ -15,7 +15,11 @@ export const ROLE_TONE: Readonly<Record<UserRole, StatusTone>> = { player: 'neut
 export const STATUS_LABEL: Readonly<Record<AccountStatus, string>> = { active: 'Active', suspended: 'Suspended' }
 export const STATUS_TONE: Readonly<Record<AccountStatus, StatusTone>> = { active: 'success', suspended: 'warning' }
 
-export const POOL_LABEL: Readonly<Record<RatingPool, string>> = { blitz: 'Blitz', rapid: 'Rapid', classical: 'Classical' }
+export const POOL_LABEL: Readonly<Record<RatingPool, string>> = {
+  blitz: 'Blitz',
+  rapid: 'Rapid',
+  classical: 'Classical',
+}
 
 export const HISTORY_STATUS_LABEL: Readonly<Record<RegistrationStatus, string>> = {
   pending: 'Pending',

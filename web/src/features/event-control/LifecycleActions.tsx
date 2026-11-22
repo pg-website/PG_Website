@@ -100,7 +100,9 @@ export function LifecycleActions({ overview }: { overview: EventOverviewDto }) {
       {caps.canCloseRegistration?.allowed === true ? (
         <ConfirmAction
           renderTrigger={(open) => (
-            <Button variant="secondary" onClick={open}>Close registrations</Button>
+            <Button variant="secondary" onClick={open}>
+              Close registrations
+            </Button>
           )}
           title="Close registrations?"
           consequence="Players will no longer be able to register. This takes effect immediately."

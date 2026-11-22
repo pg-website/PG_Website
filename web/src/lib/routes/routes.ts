@@ -140,7 +140,7 @@ export const ROUTES = [
   client('admin', 'admin-stories', '/admin/stories', 'Stories admin', { screens: [35] }),
   client('admin', 'admin-testimonials', '/admin/testimonials', 'Testimonials admin', { screens: [36] }),
   client('admin', 'admin-events', '/admin/events', 'Events admin', { screens: [37] }),
-  
+
   // Redirects to `/admin/events/[id]/overview` (outside the 59).
   client('admin', 'event-control-index', '/admin/events/[id]', 'Event control'),
   client('admin', 'event-control', '/admin/events/[id]/[tab]', 'Event control', {

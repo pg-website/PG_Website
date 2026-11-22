@@ -60,7 +60,8 @@ function computeStandings(data: AdminRoundsDto): StandingRow[] {
 
   const points = scoresOf(finals, played.keys())
   const breaks = computeTieBreaks(finals, points)
-  const tbOf = (id: string): TieBreaks => breaks.get(id) ?? { buchholz: 0, sonnebornBerger: 0, wins: 0 }
+  const tbOf = (id: string): TieBreaks =>
+    breaks.get(id) ?? { buchholz: 0, buchholzCut1: 0, buchholzCut2: 0, sonnebornBerger: 0 }
 
   const sorted = [...played.keys()].sort(
     (a, b) =>
@@ -74,7 +75,7 @@ function computeStandings(data: AdminRoundsDto): StandingRow[] {
   sorted.forEach((uid, index) => {
     const score = points.get(uid) ?? 0
     const tb = tbOf(uid)
-    const signature = `${String(score)}|${String(tb.buchholz)}|${String(tb.sonnebornBerger)}|${String(tb.wins)}`
+    const signature = `${String(score)}|${String(tb.buchholz)}|${String(tb.buchholzCut1)}|${String(tb.buchholzCut2)}|${String(tb.sonnebornBerger)}`
     const place = signature === last ? lastPlace : index + 1
     last = signature
     lastPlace = place
@@ -134,9 +135,7 @@ export function StandingsSection({ data }: Props) {
   ]
 
   const heading =
-    completedRounds > 0
-      ? `After ${completedRounds} ${completedRounds === 1 ? 'round' : 'rounds'}`
-      : 'In progress'
+    completedRounds > 0 ? `After ${completedRounds} ${completedRounds === 1 ? 'round' : 'rounds'}` : 'In progress'
 
   return (
     <section aria-labelledby="admin-standings-title" className="min-w-0">
@@ -150,7 +149,11 @@ export function StandingsSection({ data }: Props) {
           columns={columns}
           rows={standings}
           getRowId={(row) => row.uid}
-          empty={<EmptyState title="No results yet" framed={false}>No final results recorded.</EmptyState>}
+          empty={
+            <EmptyState title="No results yet" framed={false}>
+              No final results recorded.
+            </EmptyState>
+          }
         />
       ) : (
         <EmptyState title="No final results yet" framed={false}>

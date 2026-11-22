@@ -95,11 +95,8 @@ export function RegistrationsTab({ eventId, overview }: ControlTabProps) {
     <RegistrationActions eventId={eventId} row={row} onDone={refresh} />
   )
 
-  // FEAT-002: show the cash-register button on paid, non-terminal events only (rule 6.9: explicit ternary)
-  const showCashRegister =
-    overview.pricePaise !== 0 &&
-    overview.status !== 'cancelled' &&
-    overview.status !== 'completed'
+  // Paid events get "Register with cash"; free events get "Enroll player" (same dialog). Hidden on terminal events.
+  const showCashRegister = overview.status !== 'cancelled' && overview.status !== 'completed'
 
   return (
     <div className="grid min-w-0 gap-4">

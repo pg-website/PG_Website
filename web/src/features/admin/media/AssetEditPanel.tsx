@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { ConfirmAction } from '@/components/admin/ConfirmAction'
 import { Button } from '@/components/ui/Button'
@@ -44,16 +44,6 @@ export function AssetEditPanel({ asset, onClose, onSaved }: AssetEditPanelProps)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<unknown>(null)
   const [publishWarning, setPublishWarning] = useState(false)
-
-  // Initialise form when asset changes
-  useEffect(() => {
-    setAlt(asset.alt ?? '')
-    setDecorative(asset.decorative)
-    setCredit(asset.credit ?? '')
-    setStatus(asset.status)
-    setSaveError(null)
-    setPublishWarning(false)
-  }, [asset.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDecorativeChange = (checked: boolean) => {
     setDecorative(checked)
@@ -113,7 +103,7 @@ export function AssetEditPanel({ asset, onClose, onSaved }: AssetEditPanelProps)
       <img
         src={asset.src}
         alt={asset.alt ?? ''}
-        className="w-full max-h-48 rounded-public object-contain bg-parchment-soft"
+        className="max-h-48 w-full rounded-public bg-parchment-soft object-contain"
       />
 
       {/* Usage */}
@@ -166,18 +156,10 @@ export function AssetEditPanel({ asset, onClose, onSaved }: AssetEditPanelProps)
 
       {/* Status */}
       <Field label="Status">
-        <Select
-          options={STATUS_OPTIONS}
-          value={status}
-          onValueChange={(v) => setStatus(v as MediaAssetStatus)}
-        />
+        <Select options={STATUS_OPTIONS} value={status} onValueChange={(v) => setStatus(v as MediaAssetStatus)} />
       </Field>
 
-      {publishWarning && (
-        <Banner tone="warning">
-          Add alt text or mark as decorative before publishing.
-        </Banner>
-      )}
+      {publishWarning && <Banner tone="warning">Add alt text or mark as decorative before publishing.</Banner>}
 
       {errorCopy !== null && (
         <Banner tone="danger" title={errorCopy.title} live="alert">
@@ -190,7 +172,6 @@ export function AssetEditPanel({ asset, onClose, onSaved }: AssetEditPanelProps)
         <Button onClick={() => void handleSave()} loading={saving}>
           Save
         </Button>
-
       </div>
 
       <div className="grid gap-2 border-t border-line-admin pt-4">
@@ -201,42 +182,42 @@ export function AssetEditPanel({ asset, onClose, onSaved }: AssetEditPanelProps)
           </p>
         )}
         <div className="flex flex-wrap gap-2">
-        {asset.usageCount > 0 && (
-          <button
-            type="button"
-            disabled
-            title="Remove this asset from everything that uses it before deleting."
-            className="inline-flex min-h-tap cursor-not-allowed items-center justify-center rounded-public border border-line-admin px-4 py-2 font-ui text-sm font-semibold text-muted opacity-60"
-          >
-            Delete (in use)
-          </button>
-        )}
-        {asset.usageCount === 0 && (
-          <ConfirmAction
-            renderTrigger={(open) => (
-              <button
-                type="button"
-                onClick={open}
-                className="inline-flex min-h-tap items-center justify-center rounded-public border border-danger bg-transparent px-4 py-2 font-ui text-sm font-semibold text-danger transition-colors hover:bg-danger hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2"
-              >
-                Delete
-              </button>
-            )}
-            title="Delete this asset?"
-            consequence={`"${filename}" will be permanently deleted. This cannot be undone.`}
-            confirmLabel="Delete asset"
-            destructive
-            actionLabel="delete this asset"
-            onConfirm={async () => {
-              await api.media.deleteAsset(asset.id)
-            }}
-            onDone={() => {
-              void queryClient.invalidateQueries({ queryKey: ['admin', 'media', 'assets'] })
-              toast.success('Asset deleted')
-              onClose()
-            }}
-          />
-        )}
+          {asset.usageCount > 0 && (
+            <button
+              type="button"
+              disabled
+              title="Remove this asset from everything that uses it before deleting."
+              className="inline-flex min-h-tap cursor-not-allowed items-center justify-center rounded-public border border-line-admin px-4 py-2 font-ui text-sm font-semibold text-muted opacity-60"
+            >
+              Delete (in use)
+            </button>
+          )}
+          {asset.usageCount === 0 && (
+            <ConfirmAction
+              renderTrigger={(open) => (
+                <button
+                  type="button"
+                  onClick={open}
+                  className="hover:text-white inline-flex min-h-tap items-center justify-center rounded-public border border-danger bg-transparent px-4 py-2 font-ui text-sm font-semibold text-danger transition-colors hover:bg-danger focus-visible:outline-2 focus-visible:outline-offset-2"
+                >
+                  Delete
+                </button>
+              )}
+              title="Delete this asset?"
+              consequence={`"${filename}" will be permanently deleted. This cannot be undone.`}
+              confirmLabel="Delete asset"
+              destructive
+              actionLabel="delete this asset"
+              onConfirm={async () => {
+                await api.media.deleteAsset(asset.id)
+              }}
+              onDone={() => {
+                void queryClient.invalidateQueries({ queryKey: ['admin', 'media', 'assets'] })
+                toast.success('Asset deleted')
+                onClose()
+              }}
+            />
+          )}
         </div>
       </div>
     </aside>

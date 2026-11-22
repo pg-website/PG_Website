@@ -1,6 +1,5 @@
 import dynamic from 'next/dynamic'
 import type { ComponentType } from 'react'
-import { EmptyState } from '@/components/ui/feedback/EmptyState'
 import type { EventOverviewDto } from '@/lib/api/types/admin/control-overview'
 import type { AdminEventTab } from '@/lib/routes/routes'
 
@@ -20,19 +19,6 @@ export const CONTROL_TAB_LABEL: Readonly<Record<AdminEventTab, string>> = {
   messages: 'Messages',
   gallery: 'Gallery and recap',
   audit: 'Audit',
-}
-
-function makePlaceholder(tab: AdminEventTab): ComponentType<ControlTabProps> {
-  const label = CONTROL_TAB_LABEL[tab]
-  function TabPlaceholder() {
-    return (
-      <EmptyState title={`${label} is coming soon`} headingLevel={2}>
-        This section of the Control Room is not available yet.
-      </EmptyState>
-    )
-  }
-  TabPlaceholder.displayName = `ControlTabPlaceholder(${tab})`
-  return TabPlaceholder
 }
 
 /**

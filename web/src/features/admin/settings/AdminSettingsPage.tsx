@@ -19,7 +19,12 @@ export function AdminSettingsPage() {
           Site, sign-in, ratings, payments and notification settings. Secrets are never shown here.
         </Text>
       </header>
-      <QueryView query={query} loadingLabel="Loading settings" skeleton={<SettingsSkeleton />} errorAction="load settings">
+      <QueryView
+        query={query}
+        loadingLabel="Loading settings"
+        skeleton={<SettingsSkeleton />}
+        errorAction="load settings"
+      >
         {(dto) => <SettingsWorkspace dto={dto} />}
       </QueryView>
     </div>

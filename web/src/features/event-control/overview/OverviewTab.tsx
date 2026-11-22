@@ -9,7 +9,7 @@ import { Timeline, type TimelineItem } from '@/components/domain/Timeline'
 import { InfoRow } from '@/components/ui/InfoRow'
 import type { ControlTabProps } from '@/features/event-control/tabs'
 import type { EventOverviewDto } from '@/lib/api/types/admin/control-overview'
-import { PAIRING_MODE_LABEL, ROUND_STATE_LABEL } from '@/features/event-control/overview/overview-labels'
+import { PAIRING_MODE_LABEL, ROUND_STATE_LABEL } from '@/lib/format/event-labels'
 import { formatEventDateTime } from '@/lib/format/date'
 
 /** First open run-of-show item is "now"; done items are done; the rest are upcoming. Order and `done` come from the server. */

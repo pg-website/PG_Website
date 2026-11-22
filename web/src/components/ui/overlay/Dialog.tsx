@@ -93,7 +93,7 @@ export function Dialog({
               'transition-opacity duration-control ease-brand motion-reduce:transition-none starting:opacity-0',
               SIZE_CLASS[size],
               presentation === 'sheet' &&
-                'max-sm:max-w-none max-sm:self-end max-sm:rounded-b-none max-sm:border-b-0 max-sm:max-h-5/6',
+                'max-sm:max-h-5/6 max-sm:max-w-none max-sm:self-end max-sm:rounded-b-none max-sm:border-b-0',
             )}
           >
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 pr-16">

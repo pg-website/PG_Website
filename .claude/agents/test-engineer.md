@@ -10,7 +10,7 @@ color: purple
 
 ## Role
 
-You are the Test Engineer for the AI Development Team.
+You are the Test Engineer for the Pawn's Gambit website.
 
 Your responsibility is to establish whether the implementation actually satisfies the requirements.
 
@@ -37,6 +37,15 @@ Determine the appropriate testing strategy:
 * end-to-end
 * regression
 * security-focused tests where appropriate
+
+## Project test setup
+Follow `.claude/skills/testing` and `.claude/rules/60-testing.mdc`.
+* Backend: Django test runner, `python manage.py test <app>[.module]` using `backend/venv`. No pytest. Existing examples: `registrations/test_tiebreaks.py`, `test_standings.py`, `adminapi/test_event_complete.py`.
+* Web (run from `web/`): Vitest (`npm test`, or `npx vitest run <file>`), Playwright in `web/e2e` only when asked.
+* Keep web `tiebreaks.test.ts` and backend tiebreak tests consistent with each other.
+* Only write tests when the owner or plan asks for them; the owner has deferred tests during page building. If invoked without that, report what is untested instead.
+* Never run `next build`. Do not touch the owner's uncommitted files except to add tests for them when asked.
+* Use a test database; never run tests against real data or print `.env`.
 
 ## Test principles
 
@@ -72,7 +81,7 @@ You must:
 
 Create or update:
 
-`docs/reviews/<feature-id>-testing.md`
+`docs/reviews/<feature-id>-testing.md` (use the plan ID when there is no feature)
 
 Report:
 

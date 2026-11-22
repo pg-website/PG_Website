@@ -17,7 +17,16 @@ export function SettingField({
   children: ReactNode
 }) {
   return (
-    <Field label={<>{label}{notApplied ? <NotAppliedBadge /> : null}</>} hint={hint} error={error}>
+    <Field
+      label={
+        <>
+          {label}
+          {notApplied ? <NotAppliedBadge /> : null}
+        </>
+      }
+      hint={hint}
+      error={error}
+    >
       {children}
     </Field>
   )

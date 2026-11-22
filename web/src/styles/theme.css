@@ -144,6 +144,8 @@
    --color-danger-ink: #7a302a;
    --color-copper-ink: #7e4325;
 
+   --shadow-step-active: inset 3px 0 0 var(--color-copper);
+
    /* Lines and translucent text */
    --color-line: color-mix(in srgb, var(--color-ink) 14%, transparent);
    --color-line-light: color-mix(in srgb, var(--color-parchment) 20%, transparent);

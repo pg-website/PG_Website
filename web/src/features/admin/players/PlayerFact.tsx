@@ -8,4 +8,3 @@ export function PlayerFact({ label, children }: { label: string; children: React
     </div>
   )
 }
-

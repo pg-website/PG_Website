@@ -65,7 +65,6 @@ export function HoldActivePanel({ event, registration }: HoldActivePanelProps) {
 
   const [checkout, setCheckout] = useState<CheckoutPhase>({ phase: 'idle', error: null })
 
-
   // Countdown from server's clock. When it reaches 0, re-read R01 (the server decides what expired means).
   const leftMs = useServerCountdown(registration.holdExpiresAt, registration.serverNow, () => {
     void queryClient.invalidateQueries({ queryKey: qk.registration(slug) })
@@ -152,7 +151,10 @@ export function HoldActivePanel({ event, registration }: HoldActivePanelProps) {
     try {
       await loadRazorpay()
     } catch {
-      setCheckout({ phase: 'idle', error: 'The payment page could not be loaded. Check your connection and try again.' })
+      setCheckout({
+        phase: 'idle',
+        error: 'The payment page could not be loaded. Check your connection and try again.',
+      })
       return
     }
 

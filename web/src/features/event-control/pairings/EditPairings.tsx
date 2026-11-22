@@ -203,8 +203,8 @@ export function EditPairings({ eventId, round, onExit }: Props) {
     >
       <section aria-label="Edit pairings" className="flex min-w-0 flex-col gap-4">
         <Banner tone="info" title="Choose a player for each seat">
-          Use &ldquo;Choose player&rdquo; to pick from a searchable list, or press a player and then another to swap them.
-          &ldquo;Swap colours&rdquo; flips a board. {SWAP_NOTE}
+          Use &ldquo;Choose player&rdquo; to pick from a searchable list, or press a player and then another to swap
+          them. &ldquo;Swap colours&rdquo; flips a board. {SWAP_NOTE}
         </Banner>
 
         {rematchOn.length > 0 ? (
@@ -224,7 +224,10 @@ export function EditPairings({ eventId, round, onExit }: Props) {
           {model.boards.map((board) => {
             const boardLabel = `Board ${String(board.board)}`
             return (
-              <li key={board.board} className="rounded-md flex flex-col gap-2 border border-line-admin bg-admin-panel p-3">
+              <li
+                key={board.board}
+                className="rounded-md flex flex-col gap-2 border border-line-admin bg-admin-panel p-3"
+              >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h3 className="font-ui text-base font-strong">{boardLabel}</h3>
                   {board.locked ? <span className="text-sm text-ink-soft">Locked: has a result</span> : null}

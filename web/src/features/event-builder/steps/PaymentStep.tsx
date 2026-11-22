@@ -73,130 +73,130 @@ export function PaymentStep({ dataKey }: BuilderStepProps) {
 
   return (
     <div className="grid min-w-0 gap-6">
-        {/* Payment mode cards — screen 41 reference */}
-        <section aria-labelledby={`${groupId}-mode-heading`} className="grid min-w-0 gap-4">
-          <Heading level={2} size="card" id={`${groupId}-mode-heading`}>
-            Payment mode
-          </Heading>
-          <Field label="How players pay" group id={`${groupId}-mode`}>
-            <div className="grid min-w-0 gap-3 sm:grid-cols-2">
-              {PAYMENT_MODE_OPTIONS.map((option) => (
-                <ChoiceCard
-                  key={option.value}
-                  type="radio"
-                  name={`${groupId}-mode`}
-                  value={option.value}
-                  label={option.label}
-                  description={
-                    option.disabled ? (
-                      <>
-                        {option.description}
-                        <span className="block text-muted">(not available at launch)</span>
-                      </>
-                    ) : (
-                      option.description
-                    )
+      {/* Payment mode cards — screen 41 reference */}
+      <section aria-labelledby={`${groupId}-mode-heading`} className="grid min-w-0 gap-4">
+        <Heading level={2} size="card" id={`${groupId}-mode-heading`}>
+          Payment mode
+        </Heading>
+        <Field label="How players pay" group id={`${groupId}-mode`}>
+          <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+            {PAYMENT_MODE_OPTIONS.map((option) => (
+              <ChoiceCard
+                key={option.value}
+                type="radio"
+                name={`${groupId}-mode`}
+                value={option.value}
+                label={option.label}
+                description={
+                  option.disabled ? (
+                    <>
+                      {option.description}
+                      <span className="block text-muted">(not available at launch)</span>
+                    </>
+                  ) : (
+                    option.description
+                  )
+                }
+                checked={option.disabled ? false : payMode === option.value}
+                disabled={option.disabled || price.locked}
+                onCheckedChange={(checked) => {
+                  if (checked && !option.disabled && (option.value === 'free' || option.value === 'fixed')) {
+                    handleModeChange(option.value)
                   }
-                  checked={option.disabled ? false : payMode === option.value}
-                  disabled={option.disabled || price.locked}
-                  onCheckedChange={(checked) => {
-                    if (checked && !option.disabled && (option.value === 'free' || option.value === 'fixed')) {
-                      handleModeChange(option.value)
-                    }
-                  }}
-                />
-              ))}
-            </div>
+                }}
+              />
+            ))}
+          </div>
+        </Field>
+      </section>
+
+      {/* Price — only shown when Fixed price mode is selected */}
+      {payMode === 'fixed' ? (
+        <section aria-labelledby={`${groupId}-price-heading`} className="grid min-w-0 gap-4">
+          <Heading level={2} size="card" id={`${groupId}-price-heading`}>
+            Price
+          </Heading>
+          <FormField
+            control={control}
+            name="pricePaise"
+            label="Entry price (INR)"
+            hint={
+              price.locked
+                ? `Locked: ${price.reason}`
+                : 'In rupees, up to 2 decimals. Stored in paise. The server is the source of truth for the final amount.'
+            }
+          >
+            {(field) => (
+              <PriceInput
+                ref={field.ref}
+                name={field.name}
+                paise={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                disabled={price.locked}
+              />
+            )}
+          </FormField>
+
+          {/* Provider — read-only (Razorpay, screen 41) */}
+          <Field label="Provider" hint="Payment gateway. Fixed to Razorpay for all paid events.">
+            <Input value="Razorpay" disabled readOnly aria-readonly="true" />
           </Field>
         </section>
+      ) : null}
 
-        {/* Price — only shown when Fixed price mode is selected */}
-        {payMode === 'fixed' ? (
-          <section aria-labelledby={`${groupId}-price-heading`} className="grid min-w-0 gap-4">
-            <Heading level={2} size="card" id={`${groupId}-price-heading`}>
-              Price
-            </Heading>
-            <FormField
-              control={control}
-              name="pricePaise"
-              label="Entry price (INR)"
-              hint={
-                price.locked
-                  ? `Locked: ${price.reason}`
-                  : 'In rupees, up to 2 decimals. Stored in paise. The server is the source of truth for the final amount.'
-              }
-            >
-              {(field) => (
-                <PriceInput
-                  ref={field.ref}
-                  name={field.name}
-                  paise={field.value}
-                  onChange={field.onChange}
-                  onBlur={field.onBlur}
-                  disabled={price.locked}
-                />
-              )}
-            </FormField>
-
-            {/* Provider — read-only (Razorpay, screen 41) */}
-            <Field label="Provider" hint="Payment gateway. Fixed to Razorpay for all paid events.">
-              <Input value="Razorpay" disabled readOnly aria-readonly="true" />
-            </Field>
-          </section>
-        ) : null}
-
-        {/* Refunds and holds */}
-        <section aria-labelledby={`${groupId}-rules-heading`} className="grid min-w-0 gap-4">
-          <Heading level={2} size="card" id={`${groupId}-rules-heading`}>
-            Refunds and holds
-          </Heading>
-          <div className="grid min-w-0 gap-4 md:grid-cols-2">
-            <FormField
-              control={control}
-              name="refundWindowHours"
-              label="Refund window (hours before start)"
-              hint="Leave empty for no refunds."
-            >
-              {(field) => (
-                <Input
-                  ref={field.ref}
-                  name={field.name}
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  step={1}
-                  placeholder="No refunds"
-                  value={field.value ?? ''}
-                  onChange={(event) => field.onChange(event.target.value === '' ? null : Number(event.target.value))}
-                  onBlur={field.onBlur}
-                />
-              )}
-            </FormField>
-            <FormField
-              control={control}
-              name="holdMinutes"
-              label="Seat hold (minutes)"
-              hint="How long a seat is held while the player pays (1 to 60)."
-            >
-              {(field) => (
-                <Input
-                  ref={field.ref}
-                  name={field.name}
-                  type="number"
-                  inputMode="numeric"
-                  min={1}
-                  max={60}
-                  step={1}
-                  value={Number.isFinite(field.value) ? field.value : ''}
-                  onChange={(event) =>
-                    field.onChange(event.target.value === '' ? Number.NaN : Number(event.target.value))
-                  }
-                  onBlur={field.onBlur}
-                />
-              )}
-            </FormField>
-          </div>
-        </section>
+      {/* Refunds and holds */}
+      <section aria-labelledby={`${groupId}-rules-heading`} className="grid min-w-0 gap-4">
+        <Heading level={2} size="card" id={`${groupId}-rules-heading`}>
+          Refunds and holds
+        </Heading>
+        <div className="grid min-w-0 gap-4 md:grid-cols-2">
+          <FormField
+            control={control}
+            name="refundWindowHours"
+            label="Refund window (hours before start)"
+            hint="Leave empty for no refunds."
+          >
+            {(field) => (
+              <Input
+                ref={field.ref}
+                name={field.name}
+                type="number"
+                inputMode="numeric"
+                min={0}
+                step={1}
+                placeholder="No refunds"
+                value={field.value ?? ''}
+                onChange={(event) => field.onChange(event.target.value === '' ? null : Number(event.target.value))}
+                onBlur={field.onBlur}
+              />
+            )}
+          </FormField>
+          <FormField
+            control={control}
+            name="holdMinutes"
+            label="Seat hold (minutes)"
+            hint="How long a seat is held while the player pays (1 to 60)."
+          >
+            {(field) => (
+              <Input
+                ref={field.ref}
+                name={field.name}
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={60}
+                step={1}
+                value={Number.isFinite(field.value) ? field.value : ''}
+                onChange={(event) =>
+                  field.onChange(event.target.value === '' ? Number.NaN : Number(event.target.value))
+                }
+                onBlur={field.onBlur}
+              />
+            )}
+          </FormField>
+        </div>
+      </section>
     </div>
   )
 }

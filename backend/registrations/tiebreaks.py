@@ -1,10 +1,11 @@
 """Standings order and tie-breaks. Pure functions: no database, no clock.
 
-Order: points, then Buchholz, then Sonneborn-Berger, then wins, then the caller's name order.
+Order: points, then Buchholz, then Buchholz cut 1, then Buchholz cut 2, then Sonneborn-Berger, then the caller's name order.
   * Buchholz            sum of the final scores of the opponents a player faced.
+  * Buchholz cut 1      Buchholz with the lowest opponent score removed.
+  * Buchholz cut 2      Buchholz with the two lowest opponent scores removed.
   * Sonneborn-Berger    for each opponent: a win adds their score, a draw adds half of it, a loss adds nothing.
-  * Wins                games won, a bye counts as a win.
-A bye counts as a full point and a win. For Buchholz and Sonneborn-Berger it is a virtual opponent on the player's own
+A bye counts as a full point. For Buchholz and Sonneborn-Berger it is a virtual opponent on the player's own
 final score (the usual convention), so a bye neither helps nor hurts the player's tie-breaks more than a real game would.
 Only final results are passed in.
 """
@@ -23,12 +24,13 @@ class Game:
 @dataclass(frozen=True)
 class TieBreaks:
     buchholz: float
+    buchholz_cut1: float
+    buchholz_cut2: float
     sonneborn_berger: float
-    wins: int
 
     def key(self):
         """Sort key part: higher is better on every field."""
-        return (-self.buchholz, -self.sonneborn_berger, -self.wins)
+        return (-self.buchholz, -self.buchholz_cut1, -self.buchholz_cut2, -self.sonneborn_berger)
 
 
 def score_of(games, players) -> dict:
@@ -49,25 +51,31 @@ def score_of(games, players) -> dict:
 def compute(games, players) -> dict:
     """Maps every player id in `players` to its TieBreaks, from the final `games`."""
     points = score_of(games, players)
-    buchholz = {p: 0.0 for p in players}
+    opponent_scores = {p: [] for p in players}
     sonneborn = {p: 0.0 for p in players}
-    wins = {p: 0 for p in players}
 
     for g in games:
         if g.black is None:
-            wins[g.white] += 1
-            buchholz[g.white] += points[g.white]
+            # Bye: virtual opponent on player's own score
+            opponent_scores[g.white].append(points[g.white])
             sonneborn[g.white] += points[g.white]
             continue
         for me, opp, mine in ((g.white, g.black, 'white'), (g.black, g.white, 'black')):
-            buchholz[me] += points[opp]
+            opponent_scores[me].append(points[opp])
             if g.outcome == mine:
-                wins[me] += 1
                 sonneborn[me] += points[opp]
             elif g.outcome == 'draw':
                 sonneborn[me] += points[opp] / 2
 
-    return {p: TieBreaks(buchholz[p], sonneborn[p], wins[p]) for p in players}
+    result = {}
+    for p in players:
+        opp_scores = sorted(opponent_scores[p])
+        buchholz = sum(opp_scores)
+        buchholz_cut1 = sum(opp_scores[1:]) if len(opp_scores) > 0 else 0.0
+        buchholz_cut2 = sum(opp_scores[2:]) if len(opp_scores) > 1 else 0.0
+        result[p] = TieBreaks(buchholz, buchholz_cut1, buchholz_cut2, sonneborn[p])
+    
+    return result
 
 
 def place_numbers(ordered, points, tiebreaks) -> list:

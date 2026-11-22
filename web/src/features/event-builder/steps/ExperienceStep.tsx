@@ -50,162 +50,158 @@ export function ExperienceStep() {
 
   return (
     <form
-        noValidate
-        onSubmit={(event) => event.preventDefault()}
-        className="grid min-w-0 gap-6"
-        aria-label="Event experience"
+      noValidate
+      onSubmit={(event) => event.preventDefault()}
+      className="grid min-w-0 gap-6"
+      aria-label="Event experience"
+    >
+      {/* Mode cards — screen 39 reference: Hosted social / Competitive */}
+      <Field label="Event mode" group id={`${groupId}-mode`} hint="Sets the feel and format shown to players.">
+        <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+          {MODE_OPTIONS.map((option) => (
+            <ChoiceCard
+              key={option.value}
+              type="radio"
+              name={`${groupId}-mode`}
+              value={option.value}
+              label={option.label}
+              description={option.description}
+              checked={modeController.field.value === option.value}
+              onCheckedChange={(checked) => {
+                if (checked) modeController.field.onChange(option.value)
+              }}
+              onBlur={modeController.field.onBlur}
+            />
+          ))}
+        </div>
+      </Field>
+
+      {/* Arrival promise — screen 39, "Arrival promise" textarea */}
+      <FormField
+        control={control}
+        name="arrivalPromise"
+        label="Arrival promise"
+        optionalLabel
+        hint="A short paragraph shown on the event card and welcome panel. Leave blank to use the default."
       >
-        {/* Mode cards — screen 39 reference: Hosted social / Competitive */}
-        <Field label="Event mode" group id={`${groupId}-mode`} hint="Sets the feel and format shown to players.">
-          <div className="grid min-w-0 gap-3 sm:grid-cols-2">
-            {MODE_OPTIONS.map((option) => (
-              <ChoiceCard
-                key={option.value}
-                type="radio"
-                name={`${groupId}-mode`}
-                value={option.value}
-                label={option.label}
-                description={option.description}
-                checked={modeController.field.value === option.value}
-                onCheckedChange={(checked) => {
-                  if (checked) modeController.field.onChange(option.value)
-                }}
-                onBlur={modeController.field.onBlur}
-              />
-            ))}
-          </div>
-        </Field>
-
-        {/* Arrival promise — screen 39, "Arrival promise" textarea */}
-        <FormField
-          control={control}
-          name="arrivalPromise"
-          label="Arrival promise"
-          optionalLabel
-          hint="A short paragraph shown on the event card and welcome panel. Leave blank to use the default."
-        >
-          {(field, id) => (
-            <Textarea
-              id={id}
-              ref={field.ref}
-              name={field.name}
-              value={field.value}
-              rows={3}
-              maxLength={400}
-              placeholder="Walk in alone if you like. We'll welcome you by name and make the first game easy."
-              onBlur={field.onBlur}
-              onChange={field.onChange}
-            />
-          )}
-        </FormField>
-
-        {/* Description */}
-        <FormField
-          control={control}
-          name="description"
-          label="Description"
-          optionalLabel
-          hint="The full story of the event, shown on its page."
-        >
-          {(field, id) => (
-            <Textarea
-              id={id}
-              ref={field.ref}
-              name={field.name}
-              value={field.value}
-              rows={6}
-              maxLength={4000}
-              onBlur={field.onBlur}
-              onChange={field.onChange}
-            />
-          )}
-        </FormField>
-
-        {/* First-timer welcome section */}
-        <section aria-labelledby={`${groupId}-welcome`} className="grid min-w-0 gap-4">
-          <Heading level={2} size="card" id={`${groupId}-welcome`}>
-            First-timer welcome
-          </Heading>
-          <FormField
-            control={control}
-            name="eyebrow"
-            label="Welcome label"
-            optionalLabel
-            hint="A short line above the heading."
-          >
-            {(field, id) => (
-              <Input
-                id={id}
-                ref={field.ref}
-                name={field.name}
-                value={field.value}
-                maxLength={60}
-                onBlur={field.onBlur}
-                onChange={field.onChange}
-              />
-            )}
-          </FormField>
-          <FormField control={control} name="heading" label="Heading" optionalLabel>
-            {(field, id) => (
-              <Input
-                id={id}
-                ref={field.ref}
-                name={field.name}
-                value={field.value}
-                maxLength={160}
-                onBlur={field.onBlur}
-                onChange={field.onChange}
-              />
-            )}
-          </FormField>
-          <FormField control={control} name="body" label="Welcome text" optionalLabel>
-            {(field, id) => (
-              <Textarea
-                id={id}
-                ref={field.ref}
-                name={field.name}
-                value={field.value}
-                rows={4}
-                maxLength={1200}
-                onBlur={field.onBlur}
-                onChange={field.onChange}
-              />
-            )}
-          </FormField>
-
-          <FormField control={control} name="hostedArrival" label="Hospitality" group>
-            {(field, id) => (
-              <Switch
-                id={id}
-                ref={field.ref}
-                name={field.name}
-                checked={field.value}
-                onCheckedChange={field.onChange}
-                onBlur={field.onBlur}
-                label="Hosted arrival"
-                description="A host greets first-timers at the door and walks them to a table."
-              />
-            )}
-          </FormField>
-        </section>
-
-        <HighlightsEditor control={control} />
-        <LogisticsEditor control={control} />
-        <FaqEditor control={control} />
-
-        {/* Public tags — screen 39, UI-only (backend gap PLAN-003 Q3) */}
-        <Field
-          label="Public tags"
-          id={`${groupId}-tags`}
-          hint="Tags shown on the event card (e.g. ALL LEVELS, Come solo). Up to 20 tags; press Enter or comma to add each one. Stored in the browser only — the backend field is not yet available."
-          optionalLabel
-        >
-          <TagsField
-            tags={tagsController.field.value}
-            onChange={tagsController.field.onChange}
-            id={`${groupId}-tags`}
+        {(field, id) => (
+          <Textarea
+            id={id}
+            ref={field.ref}
+            name={field.name}
+            value={field.value}
+            rows={3}
+            maxLength={400}
+            placeholder="Walk in alone if you like. We'll welcome you by name and make the first game easy."
+            onBlur={field.onBlur}
+            onChange={field.onChange}
           />
-        </Field>
+        )}
+      </FormField>
+
+      {/* Description */}
+      <FormField
+        control={control}
+        name="description"
+        label="Description"
+        optionalLabel
+        hint="The full story of the event, shown on its page."
+      >
+        {(field, id) => (
+          <Textarea
+            id={id}
+            ref={field.ref}
+            name={field.name}
+            value={field.value}
+            rows={6}
+            maxLength={4000}
+            onBlur={field.onBlur}
+            onChange={field.onChange}
+          />
+        )}
+      </FormField>
+
+      {/* First-timer welcome section */}
+      <section aria-labelledby={`${groupId}-welcome`} className="grid min-w-0 gap-4">
+        <Heading level={2} size="card" id={`${groupId}-welcome`}>
+          First-timer welcome
+        </Heading>
+        <FormField
+          control={control}
+          name="eyebrow"
+          label="Welcome label"
+          optionalLabel
+          hint="A short line above the heading."
+        >
+          {(field, id) => (
+            <Input
+              id={id}
+              ref={field.ref}
+              name={field.name}
+              value={field.value}
+              maxLength={60}
+              onBlur={field.onBlur}
+              onChange={field.onChange}
+            />
+          )}
+        </FormField>
+        <FormField control={control} name="heading" label="Heading" optionalLabel>
+          {(field, id) => (
+            <Input
+              id={id}
+              ref={field.ref}
+              name={field.name}
+              value={field.value}
+              maxLength={160}
+              onBlur={field.onBlur}
+              onChange={field.onChange}
+            />
+          )}
+        </FormField>
+        <FormField control={control} name="body" label="Welcome text" optionalLabel>
+          {(field, id) => (
+            <Textarea
+              id={id}
+              ref={field.ref}
+              name={field.name}
+              value={field.value}
+              rows={4}
+              maxLength={1200}
+              onBlur={field.onBlur}
+              onChange={field.onChange}
+            />
+          )}
+        </FormField>
+
+        <FormField control={control} name="hostedArrival" label="Hospitality" group>
+          {(field, id) => (
+            <Switch
+              id={id}
+              ref={field.ref}
+              name={field.name}
+              checked={field.value}
+              onCheckedChange={field.onChange}
+              onBlur={field.onBlur}
+              label="Hosted arrival"
+              description="A host greets first-timers at the door and walks them to a table."
+            />
+          )}
+        </FormField>
+      </section>
+
+      <HighlightsEditor control={control} />
+      <LogisticsEditor control={control} />
+      <FaqEditor control={control} />
+
+      {/* Public tags — screen 39, UI-only (backend gap PLAN-003 Q3) */}
+      <Field
+        label="Public tags"
+        id={`${groupId}-tags`}
+        hint="Tags shown on the event card (e.g. ALL LEVELS, Come solo). Up to 20 tags; press Enter or comma to add each one. Stored in the browser only — the backend field is not yet available."
+        optionalLabel
+      >
+        <TagsField tags={tagsController.field.value} onChange={tagsController.field.onChange} id={`${groupId}-tags`} />
+      </Field>
     </form>
   )
 }

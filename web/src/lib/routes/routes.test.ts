@@ -77,7 +77,12 @@ describe('route registry', () => {
     const groupKey = { public: 'public', auth: 'auth', app: 'player', admin: 'admin', handoff: 'handoff' } as const
     // Additions beyond the manifest: story detail (row 59, OQ-01) and the Control Room routes (the manifest lists
     // only /admin/events/:id; FEAT-001 splits it into tabs and an edit entry).
-    const additions = new Set(['/stories/[slug]', '/players/[publicId]', '/admin/events/[id]/[tab]', '/admin/events/[id]/edit'])
+    const additions = new Set([
+      '/stories/[slug]',
+      '/players/[publicId]',
+      '/admin/events/[id]/[tab]',
+      '/admin/events/[id]/edit',
+    ])
     // Removals: /admin/events/new was replaced by CreateDraftButton (create the draft, then open /edit); the manifest
     // still lists it.
     const removals = new Set(['/admin/events/new'])

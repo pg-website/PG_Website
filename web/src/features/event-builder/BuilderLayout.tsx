@@ -185,7 +185,9 @@ export function BuilderLayout() {
             <div className="border border-line-admin bg-admin-panel p-7">
               {/* Step panel header: eyebrow + h2 (reference builder-panel) */}
               <div className="mb-5">
-                <Eyebrow>Step {index + 1} / {steps.length}</Eyebrow>
+                <Eyebrow>
+                  Step {index + 1} / {steps.length}
+                </Eyebrow>
                 <h2
                   id="builder-step-title"
                   ref={headingRef}

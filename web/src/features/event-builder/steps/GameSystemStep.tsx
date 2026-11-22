@@ -58,110 +58,106 @@ export function GameSystemStep({ dataKey }: BuilderStepProps) {
 
   return (
     <div className="grid min-w-0 gap-6">
-        {/* Rating section */}
-        <section aria-labelledby={`${groupId}-rating`} className="grid min-w-0 gap-4">
-          <Heading level={2} size="card" id={`${groupId}-rating`}>
-            Rating
-          </Heading>
-          <FormField control={control} name="rated" label="Rated" group>
-            {(field, id) => (
-              <Switch
-                id={id}
-                ref={field.ref}
-                label="Rated event"
-                description={
-                  rated.locked
-                    ? `Locked: ${rated.reason}`
-                    : 'Results update players\u2019 ratings. Turn off for casual play.'
-                }
-                checked={field.value}
-                disabled={rated.locked}
+      {/* Rating section */}
+      <section aria-labelledby={`${groupId}-rating`} className="grid min-w-0 gap-4">
+        <Heading level={2} size="card" id={`${groupId}-rating`}>
+          Rating
+        </Heading>
+        <FormField control={control} name="rated" label="Rated" group>
+          {(field, id) => (
+            <Switch
+              id={id}
+              ref={field.ref}
+              label="Rated event"
+              description={
+                rated.locked
+                  ? `Locked: ${rated.reason}`
+                  : 'Results update players\u2019 ratings. Turn off for casual play.'
+              }
+              checked={field.value}
+              disabled={rated.locked}
+              onCheckedChange={(checked) => {
+                field.onChange(checked)
+                if (checked && getValues('pool') === undefined) setValue('pool', DEFAULT_POOL)
+              }}
+              onBlur={field.onBlur}
+            />
+          )}
+        </FormField>
+        <PoolField control={control} />
+      </section>
+
+      {/* Pairing mode cards — screen 42 reference */}
+      <section aria-labelledby={`${groupId}-pairing-heading`} className="grid min-w-0 gap-4">
+        <Heading level={2} size="card" id={`${groupId}-pairing-heading`}>
+          Play format
+        </Heading>
+        <Field
+          label="Pairing mode"
+          group
+          id={`${groupId}-pairing`}
+          hint={pairing.locked ? `Locked: ${pairing.reason}` : 'How players are paired each round.'}
+        >
+          <div className="grid min-w-0 gap-3 sm:grid-cols-3">
+            {PAIRING_CARD_OPTIONS.map((option) => (
+              <ChoiceCard
+                key={option.value}
+                type="radio"
+                name={`${groupId}-pairing`}
+                value={option.value}
+                label={option.label}
+                description={option.description}
+                checked={pairingController.field.value === option.value}
+                disabled={pairing.locked}
                 onCheckedChange={(checked) => {
-                  field.onChange(checked)
-                  if (checked && getValues('pool') === undefined) setValue('pool', DEFAULT_POOL)
+                  if (checked) pairingController.field.onChange(option.value)
                 }}
+                onBlur={pairingController.field.onBlur}
+              />
+            ))}
+          </div>
+        </Field>
+
+        <div className="grid min-w-0 gap-4 md:grid-cols-2">
+          <FormField
+            control={control}
+            name="rounds"
+            label="Rounds"
+            hint={roundsRequired ? '1 to 20. Required for Swiss tournaments.' : '1 to 20. Leave empty to decide later.'}
+            required={roundsRequired}
+            optionalLabel={!roundsRequired}
+          >
+            {(field) => (
+              <IntInput
+                ref={field.ref}
+                name={field.name}
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                placeholder="Not set"
+              />
+            )}
+          </FormField>
+          <FormField
+            control={control}
+            name="timeControl"
+            label="Time control"
+            hint="For example 10+5. Up to 60 characters."
+            required
+          >
+            {(field) => (
+              <Input
+                ref={field.ref}
+                name={field.name}
+                maxLength={60}
+                value={field.value}
+                onChange={(event) => field.onChange(event.target.value)}
                 onBlur={field.onBlur}
               />
             )}
           </FormField>
-          <PoolField control={control} />
-        </section>
-
-        {/* Pairing mode cards — screen 42 reference */}
-        <section aria-labelledby={`${groupId}-pairing-heading`} className="grid min-w-0 gap-4">
-          <Heading level={2} size="card" id={`${groupId}-pairing-heading`}>
-            Play format
-          </Heading>
-          <Field
-            label="Pairing mode"
-            group
-            id={`${groupId}-pairing`}
-            hint={pairing.locked ? `Locked: ${pairing.reason}` : 'How players are paired each round.'}
-          >
-            <div className="grid min-w-0 gap-3 sm:grid-cols-3">
-              {PAIRING_CARD_OPTIONS.map((option) => (
-                <ChoiceCard
-                  key={option.value}
-                  type="radio"
-                  name={`${groupId}-pairing`}
-                  value={option.value}
-                  label={option.label}
-                  description={option.description}
-                  checked={pairingController.field.value === option.value}
-                  disabled={pairing.locked}
-                  onCheckedChange={(checked) => {
-                    if (checked) pairingController.field.onChange(option.value)
-                  }}
-                  onBlur={pairingController.field.onBlur}
-                />
-              ))}
-            </div>
-          </Field>
-
-          <div className="grid min-w-0 gap-4 md:grid-cols-2">
-            <FormField
-              control={control}
-              name="rounds"
-              label="Rounds"
-              hint={
-                roundsRequired
-                  ? '1 to 20. Required for Swiss tournaments.'
-                  : '1 to 20. Leave empty to decide later.'
-              }
-              required={roundsRequired}
-              optionalLabel={!roundsRequired}
-            >
-              {(field) => (
-                <IntInput
-                  ref={field.ref}
-                  name={field.name}
-                  value={field.value}
-                  onChange={field.onChange}
-                  onBlur={field.onBlur}
-                  placeholder="Not set"
-                />
-              )}
-            </FormField>
-            <FormField
-              control={control}
-              name="timeControl"
-              label="Time control"
-              hint="For example 10+5. Up to 60 characters."
-              required
-            >
-              {(field) => (
-                <Input
-                  ref={field.ref}
-                  name={field.name}
-                  maxLength={60}
-                  value={field.value}
-                  onChange={(event) => field.onChange(event.target.value)}
-                  onBlur={field.onBlur}
-                />
-              )}
-            </FormField>
-          </div>
-        </section>
+        </div>
+      </section>
     </div>
   )
 }

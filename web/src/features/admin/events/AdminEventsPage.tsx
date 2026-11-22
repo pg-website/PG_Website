@@ -1,12 +1,13 @@
 'use client'
 
-import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import type { Route } from 'next'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { ConfirmAction } from '@/components/admin/ConfirmAction'
 import { FilterBar } from '@/components/admin/FilterBar'
 import { Button } from '@/components/ui/Button'
+import { AdminEventRowActions } from '@/features/admin/events/AdminEventRowActions'
+import { eventHref, rowTitle } from '@/features/admin/events/event-row'
 import { CreateDraftButton } from '@/features/admin/events/CreateDraftButton'
 import { EmptyState } from '@/components/ui/feedback/EmptyState'
 import { ErrorState } from '@/components/ui/feedback/ErrorState'
@@ -20,65 +21,13 @@ import type { TableColumn } from '@/components/ui/table/tableTypes'
 import { TablePagination } from '@/components/ui/table/TablePagination'
 import { eventTypeLabel, pairingModeLabel } from '@/components/domain/eventLabels'
 import { useApi } from '@/lib/api/adapters/useApi.browser'
-import { useToast } from '@/components/ui/feedback/useToast'
 import type { AdminEventRowDto, AdminEventsQuery } from '@/lib/api/types/admin/event-list'
 import { EVENT_STATUSES, EVENT_TYPES, eventStatusSchema, eventTypeSchema } from '@/lib/api/types/event-state'
 import { formatEventDateTime } from '@/lib/format/date'
 import { formatInr } from '@/lib/format/money'
 import { adminEventsQuery } from '@/lib/query/query-options/admin'
 
-const eventHref = (id: string, suffix = ''): Route => `/admin/events/${encodeURIComponent(id)}${suffix}` as Route
-
-/** A draft can have no title yet; the list shows a placeholder instead of a blank cell. */
-const rowTitle = (row: AdminEventRowDto): string => (row.title.trim() === '' ? 'Untitled draft' : row.title)
-
-function RowActions({ row }: { row: AdminEventRowDto }) {
-  const api = useApi().admin
-  const queryClient = useQueryClient()
-  const toast = useToast()
-  const title = rowTitle(row)
-
-  return (
-    <div className="flex flex-wrap gap-2">
-      {row.capabilities.canEdit.allowed ? (
-        <Button href={eventHref(row.id, '/edit')} variant="secondary" size="sm">
-          Edit<span className="sr-only"> {title}</span>
-        </Button>
-      ) : null}
-      {row.capabilities.canDelete?.allowed === true ? (
-        <ConfirmAction
-          renderTrigger={(open) => (
-            <Button variant="secondary" size="sm" onClick={open}>
-              Delete<span className="sr-only"> {title}</span>
-            </Button>
-          )}
-          title="Delete this draft?"
-          consequence={`"${title}" will be permanently deleted. This cannot be undone.`}
-          confirmLabel="Delete event"
-          actionLabel="delete this event"
-          onConfirm={async () => {
-            // Optimistically remove the row from every cached events page.
-            // Use the 2-element prefix ['admin', 'events'] so TanStack's partial matching
-            // covers all filter/page variants (qk.admin.events() adds a 3rd queryPart element
-            // that won't match the stored keys which always carry the full filter string).
-            queryClient.setQueriesData<{ items: AdminEventRowDto[]; pagination: unknown }>(
-              { queryKey: ['admin', 'events'] },
-              (old) =>
-                old === undefined
-                  ? old
-                  : { ...old, items: old.items.filter((r) => r.id !== row.id) },
-            )
-            await api.events.deleteEvent(row.id)
-          }}
-          onDone={() => {
-            void queryClient.invalidateQueries({ queryKey: ['admin', 'events'] })
-            toast.success('Event deleted')
-          }}
-        />
-      ) : null}
-    </div>
-  )
-}
+const renderRowActions = (row: AdminEventRowDto) => <AdminEventRowActions row={row} />
 
 const PAGE_SIZE = 20
 const ALL = 'all'
@@ -214,7 +163,7 @@ export function AdminEventsPage() {
         getRowId={(row) => row.id}
         rowHref={(row) => eventHref(row.id)}
         loading={data === undefined}
-        actions={(row) => <RowActions row={row} />}
+        actions={renderRowActions}
         empty={
           <EmptyState
             framed={false}

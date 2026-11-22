@@ -298,6 +298,9 @@ check_standings = arr(obj({
     'score': number(0, 200, 0.5),
     'rounds': integer(0, 100),
     'rating': _rating,
+}, optional={
+    # First tie-break (sum of opponents' scores). Optional: archives stored before it existed omit it.
+    'buchholz': number(0, 20000),
 }), 0, 500)
 check_social = arr(obj({'label': text(40), 'href': safe_href()}), 0, 8)
 

@@ -2,13 +2,7 @@ import { z } from 'zod'
 import { capabilityFlagSchema } from '@/lib/api/types/admin/common'
 import { userRoleSchema } from '@/lib/api/types/auth'
 import { ratingPoolSchema } from '@/lib/api/types/identity'
-import {
-  countSchema,
-  isoDateSchema,
-  isoInstantSchema,
-  uuidSchema,
-  versionSchema,
-} from '@/lib/api/types/primitives'
+import { countSchema, isoDateSchema, isoInstantSchema, uuidSchema, versionSchema } from '@/lib/api/types/primitives'
 import { registrationStatusSchema } from '@/lib/api/types/registration'
 
 // Admin players (contract G01 to G03, screen 54). The record shows only the PERMITTED private fields for the caller's

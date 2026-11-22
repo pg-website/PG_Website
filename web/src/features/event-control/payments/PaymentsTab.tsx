@@ -141,7 +141,7 @@ export function PaymentsTab({ eventId }: ControlTabProps) {
               'inline-flex min-h-11 items-center rounded-public border px-3 py-2 text-sm transition-colors',
               status === opt.value
                 ? 'border-forest bg-forest text-parchment'
-                : 'border-line bg-surface text-ink hover:border-forest/50',
+                : 'bg-surface border-line text-ink hover:border-forest/50',
             ].join(' ')}
           >
             {opt.label}

@@ -4,7 +4,6 @@ import { useCallback, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useApi } from '@/lib/api/adapters/useApi.browser'
 import { MEDIA_CONTENT_TYPES, MAX_UPLOAD_BYTES, type MediaAssetDto } from '@/lib/api/types/admin/media'
-import { qk } from '@/lib/query/keys'
 
 export type UploadStatus = 'idle' | 'uploading' | 'completing' | 'done' | 'error'
 
@@ -78,7 +77,8 @@ export function useUploadFlow() {
               setState((s) => ({ ...s, progress: Math.round((e.loaded / e.total) * 90) }))
             }
           }
-          xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Storage PUT failed: ${xhr.status}`)))
+          xhr.onload = () =>
+            xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Storage PUT failed: ${xhr.status}`))
           xhr.onerror = () => reject(new Error('Storage PUT network error'))
           xhr.send(file)
         })

@@ -3,7 +3,6 @@
 import { useQuery } from '@tanstack/react-query'
 import type { Route } from 'next'
 import { MetricTile } from '@/components/domain/MetricTile'
-import { Button } from '@/components/ui/Button'
 import { CreateDraftButton } from '@/features/admin/events/CreateDraftButton'
 import { PageIntro } from '@/components/ui/PageIntro'
 import type { StatusTone } from '@/components/ui/StatusBadge'
@@ -48,9 +47,7 @@ export function AdminDashboard() {
         eyebrow="Operations"
         title="Dashboard"
         description="What needs your attention today, in the order it matters."
-        actions={
-          <CreateDraftButton size="lg">New event</CreateDraftButton>
-        }
+        actions={<CreateDraftButton size="lg">New event</CreateDraftButton>}
       />
       <QueryView
         query={query}
@@ -109,10 +106,7 @@ export function AdminDashboard() {
                   </h2>
                 </div>
                 {data.event === null ? (
-                  <EmptyState
-                    title="No upcoming event"
-                    action={<CreateDraftButton>Create an event</CreateDraftButton>}
-                  >
+                  <EmptyState title="No upcoming event" action={<CreateDraftButton>Create an event</CreateDraftButton>}>
                     Nothing is scheduled. Create an event to open registration.
                   </EmptyState>
                 ) : (

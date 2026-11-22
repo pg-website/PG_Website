@@ -56,6 +56,9 @@ const nextConfig: NextConfig = {
   // web/ is an independent package; pin the root so the parent repo lockfile is not inferred.
   turbopack: { root: import.meta.dirname },
   typedRoutes: true,
+  experimental: {
+    agentUpgrade: 'security',
+  },
   poweredByHeader: false,
   reactStrictMode: true,
   images: {

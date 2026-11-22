@@ -1,7 +1,7 @@
 'use client'
 
 import { useModel, type Path } from '@/features/cms/fields/model'
-import { AssetListField } from '@/features/media/AssetListField'
+import { AssetListField } from '@/components/admin/AssetListField'
 import type { MediaAssetSummary } from '@/lib/api/types/admin/media'
 import { MEDIA_INTERVAL_DEFAULT } from '@/lib/api/types/admin/media'
 import type { MediaCollection } from '@/lib/api/types/media'
