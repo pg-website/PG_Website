@@ -4,7 +4,6 @@ import { useCallback, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useApi } from '@/lib/api/adapters/useApi.browser'
 import { MEDIA_CONTENT_TYPES, MAX_UPLOAD_BYTES, type MediaAssetDto } from '@/lib/api/types/admin/media'
-import { qk } from '@/lib/query/keys'
 
 export type UploadStatus = 'idle' | 'uploading' | 'completing' | 'done' | 'error'
 

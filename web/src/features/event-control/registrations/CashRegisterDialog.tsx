@@ -16,7 +16,8 @@ import { rupeesToPaise } from '@/features/admin/payments/payments-labels'
 import { adminPlayersQuery } from '@/lib/query/query-options/admin'
 import type { AdminPlayerRowDto } from '@/lib/api/types/admin/players'
 import type { EventOverviewDto } from '@/lib/api/types/admin/control-overview'
-import { formatInr } from '@/lib/format/money'
+import { ConfirmSummary } from '@/features/event-control/registrations/ConfirmSummary'
+import { PlayerResultItem } from '@/features/event-control/registrations/PlayerResultItem'
 
 // CashRegisterDialog (FEAT-002, TASK-007). Toolbar button + two-step modal:
 //   Step 1 — search a player + enter collected amount.
@@ -29,95 +30,6 @@ const DEBOUNCE_MS = 300
 const SEARCH_MIN = 2
 const CANCEL_BTN_CLASS =
   'inline-flex min-h-control min-w-0 items-center justify-center rounded-public border border-forest bg-transparent px-6 py-3 text-center type-button text-forest hover:bg-line'
-
-// ---- Sub-components (defined OUTSIDE CashRegisterDialog — rule 5.4) ----
-
-interface PlayerResultItemProps {
-  player: AdminPlayerRowDto
-  selected: boolean
-  onSelect: (player: AdminPlayerRowDto) => void
-}
-
-/** One player row in the search results list. */
-function PlayerResultItem({ player, selected, onSelect }: PlayerResultItemProps) {
-  return (
-    <button
-      type="button"
-      onClick={() => {
-        onSelect(player)
-      }}
-      aria-pressed={selected}
-      className={[
-        'w-full rounded-public border px-3 py-2 text-left text-sm transition-colors',
-        selected
-          ? 'border-forest bg-forest/10 text-ink'
-          : 'border-line bg-transparent text-ink hover:border-forest/40',
-      ].join(' ')}
-    >
-      <span className="block font-semibold">{player.name}</span>
-      <span className="block text-xs text-ink-soft">{player.email}</span>
-    </button>
-  )
-}
-
-interface ConfirmSummaryProps {
-  playerName: string
-  eventTitle: string
-  eventPricePaise: number | undefined
-  amountRupees: string
-  free: boolean
-}
-
-/** Confirmation view: player, event, published fee and entered amount. */
-function ConfirmSummary({ playerName, eventTitle, eventPricePaise, amountRupees, free }: ConfirmSummaryProps) {
-  const enteredPaise = rupeesToPaise(amountRupees)
-  const feeMatches = eventPricePaise === undefined || enteredPaise === eventPricePaise
-  if (free) {
-    return (
-      <dl className="grid gap-3 text-sm">
-        <div className="flex justify-between gap-4">
-          <dt className="font-semibold text-ink-soft">Player</dt>
-          <dd className="text-ink">{playerName}</dd>
-        </div>
-        <div className="flex justify-between gap-4">
-          <dt className="font-semibold text-ink-soft">Event</dt>
-          <dd className="text-ink">{eventTitle}</dd>
-        </div>
-        <div className="flex justify-between gap-4">
-          <dt className="font-semibold text-ink-soft">Entry fee</dt>
-          <dd className="text-ink">Free</dd>
-        </div>
-      </dl>
-    )
-  }
-  return (
-    <dl className="grid gap-3 text-sm">
-      <div className="flex justify-between gap-4">
-        <dt className="font-semibold text-ink-soft">Player</dt>
-        <dd className="text-ink">{playerName}</dd>
-      </div>
-      <div className="flex justify-between gap-4">
-        <dt className="font-semibold text-ink-soft">Event</dt>
-        <dd className="text-ink">{eventTitle}</dd>
-      </div>
-      {eventPricePaise !== undefined ? (
-        <div className="flex justify-between gap-4">
-          <dt className="font-semibold text-ink-soft">Published fee</dt>
-          <dd className="text-ink">{formatInr(eventPricePaise, { zero: 'amount' })}</dd>
-        </div>
-      ) : null}
-      <div className="flex justify-between gap-4">
-        <dt className="font-semibold text-ink-soft">Amount collected</dt>
-        <dd className={feeMatches ? 'text-ink' : 'text-warning-ink font-semibold'}>
-          {enteredPaise !== null ? formatInr(enteredPaise, { zero: 'amount' }) : amountRupees}
-        </dd>
-      </div>
-      {!feeMatches ? (
-        <p className="text-xs text-warning-ink">The collected amount differs from the published entry fee.</p>
-      ) : null}
-    </dl>
-  )
-}
 
 // ---- Main component ----
 
@@ -144,7 +56,7 @@ export function CashRegisterDialog({ eventId, overview, onSuccess }: CashRegiste
 
   // player search state
   const [searchText, setSearchText] = useState('')
-  const [searchQ, setSearchQ] = useState<string | undefined>(undefined)
+  const [debouncedQ, setDebouncedQ] = useState('')
   // functional setState: new state depends on previous (toggle selection)
   const [selectedPlayer, setSelectedPlayer] = useState<AdminPlayerRowDto | null>(null)
 
@@ -161,18 +73,15 @@ export function CashRegisterDialog({ eventId, overview, onSuccess }: CashRegiste
 
   // debounce player search text (rule: defer API calls, not UI updates)
   useEffect(() => {
-    const q = searchText.trim()
-    if (q.length < SEARCH_MIN) {
-      setSearchQ(undefined)
-      return
-    }
     const timer = setTimeout(() => {
-      setSearchQ(q)
+      setDebouncedQ(searchText.trim())
     }, DEBOUNCE_MS)
     return () => {
       clearTimeout(timer)
     }
   }, [searchText])
+  // Derived: too-short input disables the query immediately, without waiting for the debounce.
+  const searchQ = searchText.trim().length < SEARCH_MIN || debouncedQ.length < SEARCH_MIN ? undefined : debouncedQ
 
   // player search query — always called (rule: no conditional hooks)
   const searchQuery = useQuery({
@@ -195,7 +104,7 @@ export function CashRegisterDialog({ eventId, overview, onSuccess }: CashRegiste
   const openDialog = () => {
     setStep('search')
     setSearchText('')
-    setSearchQ(undefined)
+    setDebouncedQ('')
     setSelectedPlayer(null)
     // reset amount to current event price each time dialog opens
     const p = overview.pricePaise
@@ -330,7 +239,7 @@ export function CashRegisterDialog({ eventId, overview, onSuccess }: CashRegiste
                 {searchQuery.isPending ? (
                   <p className="text-sm text-ink-soft">Searching…</p>
                 ) : players.length === 0 ? (
-                  <p className="text-sm text-ink-soft">No players found for "{searchQ}".</p>
+                  <p className="text-sm text-ink-soft">No players found for &ldquo;{searchQ}&rdquo;.</p>
                 ) : (
                   players.map((player) => (
                     <PlayerResultItem

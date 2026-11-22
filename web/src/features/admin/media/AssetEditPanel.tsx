@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { ConfirmAction } from '@/components/admin/ConfirmAction'
 import { Button } from '@/components/ui/Button'
@@ -45,15 +45,6 @@ export function AssetEditPanel({ asset, onClose, onSaved }: AssetEditPanelProps)
   const [saveError, setSaveError] = useState<unknown>(null)
   const [publishWarning, setPublishWarning] = useState(false)
 
-  // Initialise form when asset changes
-  useEffect(() => {
-    setAlt(asset.alt ?? '')
-    setDecorative(asset.decorative)
-    setCredit(asset.credit ?? '')
-    setStatus(asset.status)
-    setSaveError(null)
-    setPublishWarning(false)
-  }, [asset.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDecorativeChange = (checked: boolean) => {
     setDecorative(checked)

@@ -31,13 +31,13 @@ export function AssetTile({ asset, selected, onClick }: AssetTileProps) {
       {missingAlt && (
         <span
           aria-label="Missing alt text"
-          className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-warning text-[0.6rem] font-bold text-white"
+          className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-warning text-xs font-bold text-white"
           title="Alt text missing"
         >
           !
         </span>
       )}
-      <p className="truncate px-1 pt-1 pb-0.5 text-left font-mono text-[0.65rem] text-muted">{asset.alt ?? '—'}</p>
+      <p className="truncate px-1 pt-1 pb-0.5 text-left font-mono text-xs text-muted">{asset.alt ?? '—'}</p>
     </button>
   )
 }

@@ -25,21 +25,21 @@ export function StepList({ steps, current, reachable, blockerCounts, onSelect }:
                 onClick={isReachable ? () => onSelect(step.id) : undefined}
                 aria-current={isActive ? 'step' : undefined}
                 className={[
-                  'flex w-full items-center gap-[10px] px-3 py-[14px] text-left text-[0.82rem] transition-colors',
+                  'flex w-full items-center gap-2.5 px-3 py-3.5 text-left text-sm transition-colors',
                   isActive
-                    ? 'font-semibold text-ink shadow-[inset_3px_0_0_var(--color-copper)]'
+                    ? 'font-semibold text-ink shadow-[var(--shadow-step-active)]'
                     : isReachable
                       ? 'text-muted hover:text-ink'
                       : 'cursor-default text-muted opacity-40',
                 ].join(' ')}
               >
-                <span aria-hidden="true" className="shrink-0 font-mono text-[0.6rem] font-normal">
+                <span aria-hidden="true" className="shrink-0 font-mono text-xs font-normal">
                   {String(index + 1).padStart(2, '0')}
                 </span>
                 <span>
                   {step.label}
                   {blockers ? (
-                    <span className="ml-1 text-[0.75rem] font-normal text-warning-ink">
+                    <span className="ml-1 text-xs font-normal text-warning-ink">
                       ({blockers})
                     </span>
                   ) : null}

@@ -3,7 +3,6 @@
 import { useQuery } from '@tanstack/react-query'
 import type { Route } from 'next'
 import { MetricTile } from '@/components/domain/MetricTile'
-import { Button } from '@/components/ui/Button'
 import { CreateDraftButton } from '@/features/admin/events/CreateDraftButton'
 import { PageIntro } from '@/components/ui/PageIntro'
 import type { StatusTone } from '@/components/ui/StatusBadge'

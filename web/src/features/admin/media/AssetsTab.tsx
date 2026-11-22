@@ -1,10 +1,10 @@
 'use client'
 
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type React from 'react'
 import { Banner } from '@/components/ui/feedback/Banner'
-import { Skeleton } from '@/components/ui/feedback/Skeleton'
+import { AssetsSkeleton } from '@/features/admin/media/AssetsSkeleton'
 import { SkeletonRegion } from '@/components/ui/feedback/SkeletonRegion'
 import { ErrorState } from '@/components/ui/feedback/ErrorState'
 import { TablePagination } from '@/components/ui/table/TablePagination'
@@ -21,17 +21,6 @@ interface AssetsTabProps {
 
 const PAGE_SIZE = 40
 const SEARCH_DEBOUNCE_MS = 300
-
-// Skeleton grid tiles (mirrors the real grid)
-function AssetsSkeleton() {
-  return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-      {Array.from({ length: 10 }, (_, i) => (
-        <Skeleton key={i} shape="block" className="aspect-square w-full" />
-      ))}
-    </div>
-  )
-}
 
 export function AssetsTab({ fileInputRef }: AssetsTabProps) {
   const api = useApi().admin
@@ -182,6 +171,7 @@ export function AssetsTab({ fileInputRef }: AssetsTabProps) {
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
           <div>{gridContent}</div>
           <AssetEditPanel
+            key={selectedAsset.id}
             asset={selectedAsset}
             onClose={() => setSelectedId(null)}
             onSaved={(updated) => {
