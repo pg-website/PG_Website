@@ -229,7 +229,6 @@ def section_detail(key) -> dict:
     has = _has_draft(draft)
     status = _section_status(live, draft)
     unpublished = status == 'draft'
-    working = draft.content if has else (live.content if live is not None else None)
     stamps = [x.updated_at for x in (live, draft if has else None) if x is not None]
     # The web reads both copies in the public section shape: `{collection: key}` references become the resolved
     # collection (mode, autoplay, intervalMs, items). Drafts keep the reference form in storage and on input.

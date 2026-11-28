@@ -11,7 +11,7 @@ from content.models import Event, MediaAsset, RevalidationOutbox, Story, Testimo
 from core.errors import ValidationFailed
 from core.idempotency import run_idempotent
 from core.pagination import PagePagination
-from core.responses import iso, now_iso, ok
+from core.responses import iso, ok
 from payments.models import PaymentMismatch
 from registrations.models import Registration
 

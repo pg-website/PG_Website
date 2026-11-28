@@ -565,7 +565,9 @@ class UnpublishBlockersTests(TestCase):
 
 class CapabilitiesTests(TestCase):
     def setUp(self):
-        self.event = Event.objects.create(**draft_fields())
+        # capabilities() reads the real clock, so the draft must start in the real future (not the frozen NOW).
+        start = timezone.now() + timedelta(days=7)
+        self.event = Event.objects.create(**draft_fields(starts_at=start, ends_at=start + timedelta(hours=3)))
         self.player = User.objects.create_user(email='player@example.com', password='test-pass-1', name='Player')
 
     def _caps(self, status, **extra):

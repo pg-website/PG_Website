@@ -30,7 +30,7 @@ from django.utils import timezone
 from accounts.models import User
 from content.models import Event
 from content.revalidation import emit
-from core.errors import (AlreadyRegistered, CancellationNotAllowed, EventFull, EventNotFound, HoldExpired, NotFound,
+from core.errors import (AlreadyRegistered, CancellationNotAllowed, EventFull, HoldExpired, NotFound,
                          RegistrationClosed, RegistrationNotOpen, ValidationFailed)
 from core.validation import (CHESS_HANDLE_RE, FIDE_ID_RE, PHONE_RE, Collector, present, require_object)
 

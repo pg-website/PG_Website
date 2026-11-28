@@ -30,7 +30,7 @@ from datetime import timedelta
 
 import requests
 from django.db import transaction
-from django.db.models import F, Q
+from django.db.models import Q
 from django.utils import timezone
 
 from .models import RevalidationOutbox
