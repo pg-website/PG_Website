@@ -9,7 +9,7 @@ from django.utils import timezone
 from accounts.models import User
 from core.responses import iso
 
-from . import conf, room, rules
+from . import room, rules
 from .dto import IdentityBook, event_cover, event_link, pool_of, registration_dto, venue_text
 from .models import Pairing, Registration, Round
 

@@ -24,7 +24,7 @@ from core.errors import NotFound, NotPublishable, SlugLocked, SlugTaken, Validat
 from core.responses import iso
 
 from . import media_service as ms
-from .cms_service import _model_errors, _size_check, _who, last_changes, resolve_image_blocks
+from .cms_service import _model_errors, _size_check, last_changes, resolve_image_blocks
 
 # `coverAssetId` and `consentAt` are the legacy forms; the web sends `media` (assetIds) and `consent`.
 STORY_FIELDS = {'version', 'slug', 'kind', 'eyebrow', 'title', 'dek', 'publishedOn', 'readingMinutes', 'featured',

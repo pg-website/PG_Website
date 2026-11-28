@@ -23,7 +23,6 @@ from payments import services as payment_services
 
 from . import profile, room, rules, selectors, services
 from .dto import registration_dto
-from .models import Registration
 
 NO_STORE = 'no-store'
 SNAPSHOT_LIMIT = ratelimit.Limit(12, ratelimit.MINUTE)  # contract 2.10: 12 per minute per user

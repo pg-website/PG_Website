@@ -108,7 +108,6 @@ def _b(code, reason, field=None):
 def readiness(event: Event, now=None) -> dict:
     now = now or timezone.now()
     out = []
-    ex = event.experience or {}
 
     def need(value, field, label, code='REQUIRED'):
         if not (isinstance(value, str) and value.strip()):

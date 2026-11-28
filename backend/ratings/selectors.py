@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from datetime import timedelta
 
-from django.conf import settings
 from django.utils import timezone
 
 from accounts.models import User

@@ -9,4 +9,4 @@ cmds = ["pip install -r requirements.txt"]
 # Railway overrides this per-service:
 #   worker    → .venv/bin/python manage.py run_worker
 #   scheduler → .venv/bin/python manage.py run_scheduler
-cmd = ".venv/bin/python manage.py migrate --no-input && .venv/bin/gunicorn pgchess.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120"
+cmd = ".venv/bin/python manage.py migrate --no-input && .venv/bin/gunicorn pgchess.wsgi:application --bind 0.0.0.0:$PORT --workers 5 --threads 4 --timeout 120"

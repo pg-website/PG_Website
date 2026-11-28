@@ -12,7 +12,6 @@ from datetime import date, datetime, time, timedelta, timezone as dt_timezone
 
 from django.db import transaction
 from django.db.models import CharField, Exists, OuterRef, Q, Value
-from django.utils import timezone
 
 import audit
 from core.errors import NotFound, ValidationFailed
